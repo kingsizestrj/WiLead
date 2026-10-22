@@ -2,7 +2,7 @@ import { AlertTriangle, ArrowLeft, CheckCircle2, Info, ListChecks, MapPinPlus, R
 import Link from "next/link";
 import { Badge, Card, PageHeader, Table, td } from "@/components/admin/ui";
 import { db } from "@/lib/db";
-import { hotspotStatus, routerChecklist, trunkCandidates, wileadUrls, type CheckItem, type HotspotStatus, type RouterInterface } from "@/lib/mikrotik-setup";
+import { hotspotStatus, routerChecklist, srcNatAddresses, trunkCandidates, wileadUrls, type CheckItem, type HotspotStatus, type RouterInterface } from "@/lib/mikrotik-setup";
 import { NewPointForm, PrepareForm } from "./forms";
 
 export default async function RouterPage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,10 +19,16 @@ export default async function RouterPage({ params }: { params: Promise<{ id: str
   let checklist: CheckItem[] = [];
   let hotspots: HotspotStatus[] = [];
   let interfaces: RouterInterface[] = [];
+  let publicAddresses: string[] = [];
   let error: string | null = null;
   if (!configError) {
     try {
-      [checklist, hotspots, interfaces] = await Promise.all([routerChecklist(router), hotspotStatus(router), trunkCandidates(router)]);
+      [checklist, hotspots, interfaces, publicAddresses] = await Promise.all([
+        routerChecklist(router),
+        hotspotStatus(router),
+        trunkCandidates(router),
+        srcNatAddresses(router),
+      ]);
     } catch (e) {
       error = (e as Error).message;
     }
@@ -69,7 +75,7 @@ export default async function RouterPage({ params }: { params: Promise<{ id: str
                   </li>
                 ))}
               </ul>
-              <PrepareForm routerId={router.id} dnsOn={!!item("DNS")?.ok} natOn={!!item("NAT")?.ok} />
+              <PrepareForm routerId={router.id} dnsOn={!!item("DNS")?.ok} publicAddresses={publicAddresses} />
             </Card>
 
             <Card title="Novo ponto" icon={<MapPinPlus className="h-4 w-4" />}>

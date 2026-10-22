@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, Plus, Wand2 } from "lucide-react";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { buttonClass, fieldClass, inputClass } from "@/components/admin/ui";
 import type { RouterInterface } from "@/lib/mikrotik-setup";
 import { createPointAction, prepareRouterAction } from "../../actions";
@@ -19,8 +19,9 @@ function Feedback({ state }: { state: Result }) {
   );
 }
 
-export function PrepareForm({ routerId, dnsOn, natOn }: { routerId: string; dnsOn: boolean; natOn: boolean }) {
+export function PrepareForm({ routerId, dnsOn, publicAddresses }: { routerId: string; dnsOn: boolean; publicAddresses: string[] }) {
   const [state, action, pending] = useActionState<Result, FormData>(prepareRouterAction.bind(null, routerId), null);
+  const [natMode, setNatMode] = useState(publicAddresses.length ? "src-nat" : "none");
   return (
     <form action={action} className="flex flex-col gap-3">
       <label className="flex items-start gap-3 text-sm">
@@ -30,13 +31,28 @@ export function PrepareForm({ routerId, dnsOn, natOn }: { routerId: string; dnsO
           <span className="block text-xs text-ink-400">Necessário para o hotspot. Se o roteador tem IP público, bloqueie a porta 53 vinda da internet no firewall.</span>
         </span>
       </label>
-      <label className="flex items-start gap-3 text-sm">
-        <input type="checkbox" name="masquerade" defaultChecked={natOn} className="mt-1 accent-fuchsia-500" />
-        <span>
-          Criar NAT (masquerade) para as redes dos pontos
-          <span className="block text-xs text-ink-400">Marque só se as redes dos pontos não saem para a internet por NAT em outro roteador.</span>
-        </span>
-      </label>
+      <div className="grid gap-3 md:grid-cols-2">
+        <label className={fieldClass}>
+          Saída das redes dos pontos para a internet
+          <select name="natMode" value={natMode} onChange={(e) => setNatMode(e.target.value)} className={inputClass}>
+            <option value="src-nat">src-nat para um IP público (recomendado)</option>
+            <option value="masquerade">masquerade (IP da interface de saída)</option>
+            <option value="none">não mexer (NAT feito em outro roteador)</option>
+          </select>
+        </label>
+        {natMode === "src-nat" && (
+          <label className={fieldClass}>
+            IP público de saída
+            <input name="natAddress" required list="public-addresses" defaultValue={publicAddresses[0] ?? ""} placeholder="168.232.244.79" className={inputClass} />
+            <datalist id="public-addresses">
+              {publicAddresses.map((ip) => <option key={ip} value={ip} />)}
+            </datalist>
+          </label>
+        )}
+      </div>
+      <p className="-mt-1 text-xs text-ink-400">
+        O masquerade usa o IP do link de saída; se esse link for privado e o NAT do roteador esperar o IP público, a navegação não volta.
+      </p>
       <button className={`${buttonClass} self-start`} disabled={pending}>
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />} Preparar roteador
       </button>

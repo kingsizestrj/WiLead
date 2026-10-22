@@ -47,6 +47,18 @@ export function wileadUrls() {
 
 export type CheckItem = { label: string; ok: boolean; detail: string; optional?: boolean };
 
+// How the points' networks reach the internet: src-nat to a public IP (what ISP routers
+// usually do), masquerade, or nothing when another router does the NAT.
+export type NatMode = { mode: "none" } | { mode: "masquerade" } | { mode: "src-nat"; toAddress: string };
+
+// Public addresses the router already uses in src-nat rules, offered as suggestions.
+export async function srcNatAddresses(router: Router) {
+  return withRouter(router, async (api) => {
+    const rules = await print(api, "/ip/firewall/nat", { chain: "srcnat", action: "src-nat" });
+    return [...new Set(rules.map((r) => r["to-addresses"]).filter(Boolean))];
+  });
+}
+
 export async function routerChecklist(router: Router): Promise<CheckItem[]> {
   const { host } = wileadUrls();
   return withRouter(router, async (api) => {
@@ -94,10 +106,14 @@ export async function routerChecklist(router: Router): Promise<CheckItem[]> {
         detail: dns["allow-remote-requests"] === "true" ? "allow-remote-requests ligado" : "desligado: clientes do hotspot não resolvem nomes",
       },
       {
-        label: "NAT (masquerade) das redes dos pontos",
+        label: "NAT das redes dos pontos",
         ok: !!nat,
         optional: true,
-        detail: nat ? "regra do WiLead ativa" : "sem regra do WiLead (ok se o NAT é feito em outro roteador)",
+        detail: nat
+          ? nat.action === "src-nat"
+            ? `src-nat para ${nat["to-addresses"]}`
+            : nat.action
+          : "sem regra do WiLead (ok se o NAT é feito em outro roteador)",
       },
     ];
   });
@@ -115,7 +131,7 @@ async function installLoginHtml(api: RouterOSAPI) {
   return `login.html baixado de ${loginHtmlUrl}`;
 }
 
-export async function prepareRouter(router: Router, opts: { masquerade: boolean; enableDns: boolean }) {
+export async function prepareRouter(router: Router, opts: { nat: NatMode; enableDns: boolean }) {
   const { host } = wileadUrls();
   return withRouter(router, async (api) => {
     const log: string[] = [];
@@ -149,13 +165,14 @@ export async function prepareRouter(router: Router, opts: { masquerade: boolean;
       await api.write("/ip/dns/set", ["=allow-remote-requests=yes"]);
       log.push("DNS do roteador atendendo os clientes");
     }
-    if (opts.masquerade) {
-      await upsertByComment(api, "/ip/firewall/nat", COMMENT.nat, [
-        "=chain=srcnat",
-        `=src-address-list=${HOTSPOT_NETWORKS_LIST}`,
-        "=action=masquerade",
-      ]);
-      log.push(`NAT (masquerade) para a lista ${HOTSPOT_NETWORKS_LIST}`);
+    if (opts.nat.mode !== "none") {
+      const action = opts.nat.mode === "src-nat" ? ["=action=src-nat", `=to-addresses=${opts.nat.toAddress}`] : ["=action=masquerade"];
+      await upsertByComment(api, "/ip/firewall/nat", COMMENT.nat, ["=chain=srcnat", `=src-address-list=${HOTSPOT_NETWORKS_LIST}`, ...action]);
+      log.push(
+        opts.nat.mode === "src-nat"
+          ? `NAT: redes dos pontos saem pelo IP ${opts.nat.toAddress}`
+          : `NAT (masquerade) para a lista ${HOTSPOT_NETWORKS_LIST}`,
+      );
     }
 
     log.push(await installLoginHtml(api));

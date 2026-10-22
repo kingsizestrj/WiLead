@@ -231,7 +231,11 @@ export async function prepareRouterAction(routerId: string, _prev: ActionResult,
   await requireAdmin();
   const router = await db.router.findUniqueOrThrow({ where: { id: routerId } });
   try {
-    const log = await prepareRouter(router, { masquerade: form.get("masquerade") === "on", enableDns: form.get("enableDns") === "on" });
+    const natMode = str(form, "natMode");
+    const toAddress = str(form, "natAddress");
+    if (natMode === "src-nat" && !/^(\d{1,3}\.){3}\d{1,3}$/.test(toAddress)) return { error: "Informe o IP público de saída (ex.: 168.232.244.79)." };
+    const nat = natMode === "src-nat" ? { mode: "src-nat" as const, toAddress } : natMode === "masquerade" ? { mode: "masquerade" as const } : { mode: "none" as const };
+    const log = await prepareRouter(router, { nat, enableDns: form.get("enableDns") === "on" });
     revalidatePath(`/admin/roteadores/${routerId}`);
     return { log };
   } catch (error) {
