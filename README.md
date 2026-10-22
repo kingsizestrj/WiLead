@@ -84,7 +84,7 @@ O WiLead identifica o ponto pelo **servidor hotspot** e pela **interface** por o
 Com todos os pontos na mesma VLAN, não dá para diferenciar. A solução é dar uma VLAN para cada ponto, mesmo que todos continuem chegando ao CCR pela mesma porta (tronco):
 
 1. No AP do ponto, marque o SSID do hotspot com a VLAN do ponto (UniFi e Intelbras corporativo fazem isso). Para APs sem VLAN, como Greatek, use uma porta *access* de um switch gerenciável ou de um rádio no ponto.
-2. No CCR, rode `mikrotik/vlan-ponto.rsc` uma vez por ponto, ajustando porta do tronco, VLAN, nome, rede /24 e perfil. Ele cria VLAN, IP, DHCP, servidor hotspot e entrada na lista `redes-hotspot`.
+2. No CCR, rode `mikrotik/vlan-ponto.rsc` uma vez por ponto, ajustando porta do tronco, VLAN, nome, rede /24 e **perfil de hotspot** (o nome que aparece em `/ip hotspot profile print`). Ele confere tudo antes de criar e só liga o DHCP depois que o hotspot está de pé. Para desfazer um ponto, inteiro ou criado pela metade, use `mikrotik/vlan-ponto-remover.rsc`.
 3. No primeiro acesso, o ponto aparece em **Locais** com o nome do servidor (ex.: `hs-praca-central`). Renomeie como quiser.
 
 Os pontos ainda não migrados continuam na VLAN atual e aparecem juntos como um único local até serem migrados.
