@@ -8,6 +8,10 @@ services:
       POSTGRES_DB: hotspot
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hotspot"]
+      interval: 5s
+      retries: 10
 
   app:
     build: .
@@ -21,7 +25,8 @@ services:
     volumes:
       - uploads:/data/uploads
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   pgdata:

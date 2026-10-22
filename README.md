@@ -32,13 +32,25 @@ Dashboard, clientes e acessos têm filtro por local e por período.
 - **MikroTik:** cadastro dos roteadores e botão "Testar conexão".
 - **Configurações:** tempo padrão de internet, validade do código e limite de códigos por hora.
 
-## Rodando
+## Instalação no servidor
+
+No servidor (Ubuntu/Debian), com um usuário que tenha `sudo`:
 
 ```bash
-cp .env.example .env        # preencha as variáveis
-docker compose up -d --build
-# painel: http://localhost:3000/admin  (login = ADMIN_EMAIL / ADMIN_PASSWORD)
+curl -fsSL https://raw.githubusercontent.com/kingsizestrj/hotspot/claude/laughing-dijkstra-xv9wc2/deploy/install.sh -o install.sh
+bash install.sh
 ```
+
+O script instala o Docker e o git se faltarem, baixa o código em `~/wilead`, cria o `.env` com segredo e senha do admin gerados e sobe o banco e o app na porta 3000.
+Rode o mesmo comando de novo para atualizar.
+
+Depois:
+1. Preencha as variáveis do Chatwoot em `~/wilead/.env` e rode `docker compose up -d` dentro de `~/wilead`.
+2. No **Nginx Proxy Manager**, crie um Proxy Host:
+   - **Domain:** `wifi.voltec.net.br`;
+   - **Forward:** `http://IP-DO-SERVIDOR:3000`;
+   - **SSL:** novo certificado Let's Encrypt com Force SSL.
+3. O domínio precisa apontar para um IP que os clientes do hotspot alcancem. Não use o proxy da Cloudflare (nuvem laranja), porque o walled garden do MikroTik libera o portal pelo IP.
 
 Desenvolvimento local:
 
@@ -52,7 +64,6 @@ npm run dev
 Com `CHATWOOT_DRY_RUN=true` e `HOTSPOT_DRY_RUN=true`, o código aparece no log e nem o Chatwoot nem o MikroTik são chamados. Para testar o portal no navegador:
 `http://localhost:3000/p?mac=AA:BB:CC:DD:EE:01&ip=10.5.50.2&server=hs-teste&login=http%3A%2F%2F10.5.50.1%2Flogin`
 
-> Em produção o portal precisa de **domínio próprio com HTTPS** (ex.: `wifi.voltec.com.br`) atrás de um proxy (Caddy, Nginx ou Traefik).
 
 ## Configurando o MikroTik (RouterOS v6 ou v7)
 
