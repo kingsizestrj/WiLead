@@ -1,5 +1,5 @@
 # Ajuste os valores <...> antes de colar no terminal do MikroTik (RouterOS v6 ou v7).
-# Portal: wifi.voltecautomacao.com.br. Servidor do WiLead: 10.128.31.78
+# Portal: wilead.voltecautomacao.com.br. Servidor do WiLead: 10.128.31.78
 
 # 1) API do RouterOS usada pelo sistema para criar os usuários do hotspot
 #    api = porta 8728 (sem criptografia, use só em rede interna/VPN)
@@ -13,8 +13,8 @@
 /ip hotspot profile set [find] login-by=http-pap,cookie http-cookie-lifetime=1d
 
 # 3) Walled garden: portal acessível antes do login
-/ip hotspot walled-garden add dst-host=wifi.voltecautomacao.com.br action=allow comment="Portal Voltec"
-/ip hotspot walled-garden ip add dst-host=wifi.voltecautomacao.com.br action=accept comment="Portal Voltec"
+/ip hotspot walled-garden add dst-host=wilead.voltecautomacao.com.br action=allow comment="Portal Voltec"
+/ip hotspot walled-garden ip add dst-host=wilead.voltecautomacao.com.br action=accept comment="Portal Voltec"
 
 # 4) Walled garden: WhatsApp liberado antes do login (para o cliente receber o código).
 #    O WhatsApp usa os blocos de IP da Meta (AS32934), os mesmos de Instagram e Facebook,
