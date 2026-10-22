@@ -14,10 +14,7 @@ services:
       retries: 10
 
   app:
-    build:
-      context: .
-      # Builds on the host network: avoids Docker bridge MTU issues that reset npm downloads
-      network: host
+    build: .
     restart: unless-stopped
     env_file: .env
     environment:
