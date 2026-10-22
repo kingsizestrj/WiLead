@@ -1,5 +1,6 @@
 "use server";
 
+import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
@@ -129,4 +130,14 @@ export async function savePortal(id: string, input: PortalInput) {
     },
   });
   revalidatePath("/admin/paginas");
+}
+
+export async function changePassword(form: FormData) {
+  const userId = await requireAdmin();
+  const user = await db.adminUser.findUniqueOrThrow({ where: { id: userId } });
+  const password = str(form, "password");
+  if (!(await bcrypt.compare(str(form, "current"), user.passwordHash))) redirect("/admin/config?senha=atual-invalida");
+  if (password.length < 8 || password !== str(form, "confirm")) redirect("/admin/config?senha=nova-invalida");
+  await db.adminUser.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(password, 10) } });
+  redirect("/admin/config?senha=ok");
 }

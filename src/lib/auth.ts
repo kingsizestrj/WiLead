@@ -1,5 +1,5 @@
 import { SignJWT } from "jose";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE, authSecret, verifyToken } from "./auth-edge";
 
@@ -8,7 +8,8 @@ export async function createSession(userId: string) {
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    // Secure only over HTTPS (behind the proxy); direct http://IP:3000 access would drop the cookie
+    secure: (await headers()).get("x-forwarded-proto") === "https",
     maxAge: 60 * 60 * 24 * 7,
     path: "/",
   });
