@@ -78,6 +78,18 @@ Dicas:
 - Prefira `api-ssl` (8729) com certificado. Se usar `api` (8728), mantenha o acesso restrito ao IP do servidor ou a uma VPN.
 - No perfil de usuário do hotspot dá para limitar a banda (`rate-limit=5M/10M`) e os aparelhos por usuário (`shared-users=1`).
 
+### Um ponto por VLAN (saber de onde o cliente vem)
+
+O WiLead identifica o ponto pelo **servidor hotspot** e pela **interface** por onde o cliente chegou (`$(interface-name)`).
+Com todos os pontos na mesma VLAN, não dá para diferenciar. A solução é dar uma VLAN para cada ponto, mesmo que todos continuem chegando ao CCR pela mesma porta (tronco):
+
+1. No AP do ponto, marque o SSID do hotspot com a VLAN do ponto (UniFi e Intelbras corporativo fazem isso). Para APs sem VLAN, como Greatek, use uma porta *access* de um switch gerenciável ou de um rádio no ponto.
+2. No CCR, rode `mikrotik/vlan-ponto.rsc` uma vez por ponto, ajustando porta do tronco, VLAN, nome, rede /24 e perfil. Ele cria VLAN, IP, DHCP, servidor hotspot e entrada na lista `redes-hotspot`.
+3. No primeiro acesso, o ponto aparece em **Locais** com o nome do servidor (ex.: `hs-praca-central`). Renomeie como quiser.
+
+Os pontos ainda não migrados continuam na VLAN atual e aparecem juntos como um único local até serem migrados.
+Não usamos uma bridge única com as VLANs porque, para o MikroTik informar a porta, seria preciso ativar `use-ip-firewall`, que vale para **todas** as bridges do roteador.
+
 ### WhatsApp no walled garden (só para quem pediu o código)
 
 O WhatsApp **não** fica liberado para todo mundo antes do login. Quando alguém pede o código, o WiLead coloca o IP do aparelho na lista `wilead-otp` do MikroTik por alguns minutos (padrão 3; ajuste ou desligue em **Configurações**).
