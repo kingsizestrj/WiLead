@@ -63,6 +63,7 @@ export async function routerChecklist(router: Router): Promise<CheckItem[]> {
   const { host } = wileadUrls();
   return withRouter(router, async (api) => {
     const [profile] = await print(api, "/ip/hotspot/profile", { name: WILEAD_PROFILE });
+    const [userProfile] = await print(api, "/ip/hotspot/user/profile", { name: router.userProfile });
     const [loginFile] = await print(api, "/file", { name: `${HTML_DIR}/login.html` });
     const [wg] = await print(api, "/ip/hotspot/walled-garden", { comment: COMMENT.portal });
     const [wgIp] = await print(api, "/ip/hotspot/walled-garden/ip", { comment: COMMENT.portal });
@@ -78,6 +79,11 @@ export async function routerChecklist(router: Router): Promise<CheckItem[]> {
         label: `Perfil de hotspot "${WILEAD_PROFILE}"`,
         ok: !!profile && profile["login-by"].includes("http-pap") && profile["html-directory"] === HTML_DIR,
         detail: profile ? `login-by=${profile["login-by"]}, pasta ${profile["html-directory"]}` : "não existe",
+      },
+      {
+        label: `Perfil de usuário "${router.userProfile}"`,
+        ok: !!userProfile,
+        detail: userProfile ? `usado nos usuários liberados (shared-users=${userProfile["shared-users"]})` : "não existe: a liberação da internet falha",
       },
       {
         label: "login.html do WiLead",
@@ -141,6 +147,12 @@ export async function prepareRouter(router: Router, opts: { nat: NatMode; enable
     if (existing) await api.write("/ip/hotspot/profile/set", [`=.id=${existing[".id"]}`, ...profile]);
     else await api.write("/ip/hotspot/profile/add", [`=name=${WILEAD_PROFILE}`, ...profile]);
     log.push(`Perfil "${WILEAD_PROFILE}" com login por http-pap e cookie`);
+
+    // User profile applied to the users WiLead creates (one device per user).
+    if (!(await print(api, "/ip/hotspot/user/profile", { name: router.userProfile })).length) {
+      await api.write("/ip/hotspot/user/profile/add", [`=name=${router.userProfile}`, "=shared-users=1"]);
+      log.push(`Perfil de usuário "${router.userProfile}" criado`);
+    }
 
     await upsertByComment(api, "/ip/hotspot/walled-garden", COMMENT.portal, [`=dst-host=${host}`, "=action=allow"]);
     await upsertByComment(api, "/ip/hotspot/walled-garden/ip", COMMENT.portal, [`=dst-host=${host}`, "=action=accept"]);

@@ -25,7 +25,7 @@ function RouterForm({ router }: { router?: Router }) {
         </label>
       </div>
       <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
-        Perfil de usuário hotspot
+        Perfil de usuário hotspot (/ip hotspot user profile)
         <input name="userProfile" defaultValue={router?.userProfile ?? "default"} className={inputClass} />
       </label>
       <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">

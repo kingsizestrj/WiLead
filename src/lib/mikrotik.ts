@@ -52,6 +52,9 @@ export async function upsertHotspotUser(router: Router | null, opts: { mac: stri
   ];
 
   await withRouter(router, async (api) => {
+    if (!(await api.write("/ip/hotspot/user/profile/print", [`?name=${router.userProfile}`])).length) {
+      throw new Error(`O perfil de usuário de hotspot "${router.userProfile}" não existe no MikroTik: rode "Preparar roteador" ou corrija o perfil no cadastro do roteador`);
+    }
     const [existing] = await api.write("/ip/hotspot/user/print", [`?name=${username}`]);
     if (existing) {
       await api.write("/ip/hotspot/user/set", [`=.id=${existing[".id"]}`, ...data]);
