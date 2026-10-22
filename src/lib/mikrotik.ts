@@ -63,3 +63,27 @@ export async function upsertHotspotUser(router: Router | null, opts: { mac: stri
 
   return { username, password };
 }
+
+export const OTP_ADDRESS_LIST = "wilead-otp";
+
+// Lets a not-yet-logged-in device reach WhatsApp for a few minutes so it can read the code.
+// The walled garden accepts src-address-list=wilead-otp to dst-address-list=wilead-meta,
+// and RouterOS drops the entry by itself when the timeout ends.
+export async function allowWhatsappTemporarily(router: Router | null, ip: string, minutes: number) {
+  if (process.env.HOTSPOT_DRY_RUN === "true") {
+    console.log(`[mikrotik:dry-run] ${OTP_ADDRESS_LIST} += ${ip} por ${minutes}m`);
+    return;
+  }
+  if (!router) throw new Error("Nenhum roteador vinculado a este local");
+
+  await withRouter(router, async (api) => {
+    const existing = await api.write("/ip/firewall/address-list/print", [`?list=${OTP_ADDRESS_LIST}`, `?address=${ip}`]);
+    for (const entry of existing) await api.write("/ip/firewall/address-list/remove", [`=.id=${entry[".id"]}`]);
+    await api.write("/ip/firewall/address-list/add", [
+      `=list=${OTP_ADDRESS_LIST}`,
+      `=address=${ip}`,
+      `=timeout=${minutes}m`,
+      "=comment=WiLead: lendo o código no WhatsApp",
+    ]);
+  });
+}

@@ -78,12 +78,11 @@ Dicas:
 - Prefira `api-ssl` (8729) com certificado. Se usar `api` (8728), mantenha o acesso restrito ao IP do servidor ou a uma VPN.
 - No perfil de usuário do hotspot dá para limitar a banda (`rate-limit=5M/10M`) e os aparelhos por usuário (`shared-users=1`).
 
-### WhatsApp no walled garden
+### WhatsApp no walled garden (só para quem pediu o código)
 
-O cliente precisa abrir o WhatsApp para ler o código, então o WhatsApp fica liberado antes do login.
-Ele usa os blocos de IP da Meta, os mesmos do Instagram e do Facebook, então esses apps também funcionam sem login.
-Isso ajuda a página a ser "instagramável", e o cadastro continua obrigatório para navegar no resto da internet.
-Os blocos estão em `mikrotik/setup.rsc`. Se a Meta mudar algum IP, confira em https://bgp.he.net/AS32934.
+O WhatsApp **não** fica liberado para todo mundo antes do login. Quando alguém pede o código, o WiLead coloca o IP do aparelho na lista `wilead-otp` do MikroTik por alguns minutos (padrão 3; ajuste ou desligue em **Configurações**).
+Só essa lista alcança os IPs da Meta (`wilead-meta`) antes do login, então o cliente sem 4G consegue ler o código. Quando o tempo acaba, o próprio MikroTik remove o IP da lista.
+A regra fica no bloco 4 do `mikrotik/setup.rsc`. Enquanto o IP está na lista, Instagram e Facebook também abrem, porque usam os mesmos IPs.
 
 ## Chatwoot: código no WhatsApp e campanhas
 

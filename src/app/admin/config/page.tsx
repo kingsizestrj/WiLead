@@ -31,6 +31,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               Máximo de códigos por telefone/aparelho por hora
               <input name="otpMaxPerHour" type="number" min={1} defaultValue={settings.otpMaxPerHour} className={inputClass} />
             </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-slate-600">
+              Minutos de WhatsApp liberado para quem pede o código (0 = desligado)
+              <input name="otpWhatsappMinutes" type="number" min={0} max={15} defaultValue={settings.otpWhatsappMinutes} className={inputClass} />
+              <span className="text-xs font-normal text-slate-400">Para quem está sem 4G conseguir ler o código. Precisa do bloco 4 do mikrotik/setup.rsc.</span>
+            </label>
             <button className={`${buttonClass} self-start`}>Salvar</button>
           </form>
         </Card>

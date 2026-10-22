@@ -160,4 +160,6 @@ model Setting {
   sessionMinutes Int @default(240)
   otpTtlMinutes  Int @default(10)
   otpMaxPerHour  Int @default(5)
+  // Minutes of pre-login WhatsApp access for a device that just requested a code (0 = off)
+  otpWhatsappMinutes Int @default(3)
 }

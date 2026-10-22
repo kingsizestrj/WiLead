@@ -4,6 +4,8 @@ import { z } from "zod";
 import { db, getSettings } from "@/lib/db";
 import { normalizeMac, normalizePhone } from "@/lib/phone";
 import { sendOtp } from "@/lib/chatwoot";
+import { allowWhatsappTemporarily } from "@/lib/mikrotik";
+import { resolveLocation } from "@/lib/portal";
 
 const schema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -11,6 +13,8 @@ const schema = z.object({
   email: z.string().trim().email().optional().or(z.literal("")),
   optIn: z.boolean(),
   mac: z.string(),
+  ip: z.string().ip({ version: "v4" }),
+  server: z.string().min(1),
 });
 
 export async function POST(req: Request) {
@@ -43,6 +47,15 @@ export async function POST(req: Request) {
     },
   });
 
+  // Opened before sending so the device without mobile data receives the message right away.
+  // A router failure only affects clients without mobile data, so it must not block the code.
+  if (settings.otpWhatsappMinutes > 0) {
+    const location = await resolveLocation(parsed.data.server);
+    await allowWhatsappTemporarily(location.router, parsed.data.ip, settings.otpWhatsappMinutes).catch((error) =>
+      console.error("[mikrotik] liberar WhatsApp", error),
+    );
+  }
+
   try {
     await sendOtp(phone, parsed.data.name, code);
   } catch (error) {
@@ -50,5 +63,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Não conseguimos enviar o código no WhatsApp. Confira o número." }, { status: 502 });
   }
 
-  return NextResponse.json({ otpId: otp.id });
+  return NextResponse.json({ otpId: otp.id, whatsappMinutes: settings.otpWhatsappMinutes });
 }

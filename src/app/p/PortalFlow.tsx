@@ -41,6 +41,7 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
   const [error, setError] = useState(routerError);
   const [form, setForm] = useState({ name: "", phone: "", email: "", optIn: true });
   const [otpId, setOtpId] = useState("");
+  const [whatsappMinutes, setWhatsappMinutes] = useState(0);
   const [code, setCode] = useState("");
   const [grant, setGrant] = useState<Grant | null>(null);
   const [countdown, setCountdown] = useState(portal.adSeconds);
@@ -96,8 +97,14 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
 
   const sendCode = () =>
     run(async () => {
-      const res = await post<{ otpId: string }>("/api/portal/otp/send", { ...form, mac: hotspot.mac });
+      const res = await post<{ otpId: string; whatsappMinutes: number }>("/api/portal/otp/send", {
+        ...form,
+        mac: hotspot.mac,
+        ip: hotspot.ip,
+        server: hotspot.server,
+      });
       setOtpId(res.otpId);
+      setWhatsappMinutes(res.whatsappMinutes);
       setCode("");
       setStep("code");
     });
@@ -161,6 +168,11 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
             <p className="opacity-90">
               Enviamos um código de 6 dígitos para o WhatsApp <b>{form.phone}</b>
             </p>
+            {whatsappMinutes > 0 && (
+              <p className="rounded-xl bg-white/10 px-4 py-2 text-sm">
+                Sem internet no celular? O WhatsApp já está liberado neste Wi-Fi por {whatsappMinutes} minutos: abra, copie o código e volte aqui.
+              </p>
+            )}
             <input className={`${input} text-center font-mono text-3xl tracking-[0.5em]`} required inputMode="numeric"
               autoComplete="one-time-code" maxLength={6} pattern="\d{6}" placeholder="••••••" autoFocus
               value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} />

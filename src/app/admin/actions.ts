@@ -69,6 +69,7 @@ export async function saveSettings(form: FormData) {
       sessionMinutes: Number(str(form, "sessionMinutes")),
       otpTtlMinutes: Number(str(form, "otpTtlMinutes")),
       otpMaxPerHour: Number(str(form, "otpMaxPerHour")),
+      otpWhatsappMinutes: Number(str(form, "otpWhatsappMinutes")),
     },
   });
   revalidatePath("/admin/config");
