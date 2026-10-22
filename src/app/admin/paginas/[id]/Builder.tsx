@@ -1,5 +1,6 @@
 "use client";
 
+import { MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { BlocksRenderer } from "@/components/BlocksRenderer";
@@ -79,7 +80,7 @@ function MediaInput({ value, onChange, accept }: { value: string; onChange: (v: 
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+    <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
       {label}
       {children}
     </label>
@@ -110,8 +111,8 @@ export function Builder({ id, initial }: { id: string; initial: PortalInput }) {
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Link href="/admin/paginas" className="text-sm text-slate-500 hover:underline">← Voltar</Link>
-            <input className="rounded-lg bg-transparent px-2 py-1 text-2xl font-bold outline-none hover:bg-white focus:bg-white"
+            <Link href="/admin/paginas" className="text-sm text-ink-300 hover:underline">← Voltar</Link>
+            <input className="rounded-lg bg-transparent px-2 py-1 text-2xl font-bold outline-none hover:bg-white/5 focus:bg-white/5"
               value={data.name} onChange={(e) => update({ name: e.target.value })} />
           </div>
           <button className={buttonClass} disabled={pending}
@@ -173,13 +174,13 @@ export function Builder({ id, initial }: { id: string; initial: PortalInput }) {
         <Card title="Blocos de conteúdo">
           <div className="flex flex-col gap-3">
             {data.blocks.map((block, index) => (
-              <div key={block.id} className="rounded-xl border border-slate-200 p-4">
+              <div key={block.id} className="rounded-xl border border-white/10 p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-sm font-semibold">{BLOCK_LABELS[block.type]}</span>
                   <div className="flex gap-1 text-sm">
-                    <button disabled={index === 0} onClick={() => moveBlock(index, -1)} className="rounded px-2 hover:bg-slate-100 disabled:opacity-30">↑</button>
-                    <button disabled={index === data.blocks.length - 1} onClick={() => moveBlock(index, 1)} className="rounded px-2 hover:bg-slate-100 disabled:opacity-30">↓</button>
-                    <button onClick={() => update({ blocks: data.blocks.filter((_, i) => i !== index) })} className="rounded px-2 text-red-600 hover:bg-red-50">Remover</button>
+                    <button disabled={index === 0} onClick={() => moveBlock(index, -1)} className="rounded px-2 hover:bg-white/5 disabled:opacity-30">↑</button>
+                    <button disabled={index === data.blocks.length - 1} onClick={() => moveBlock(index, 1)} className="rounded px-2 hover:bg-white/5 disabled:opacity-30">↓</button>
+                    <button onClick={() => update({ blocks: data.blocks.filter((_, i) => i !== index) })} className="rounded px-2 text-rose-300 hover:bg-rose-500/10">Remover</button>
                   </div>
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
@@ -215,15 +216,15 @@ export function Builder({ id, initial }: { id: string; initial: PortalInput }) {
       </div>
 
       <div className="xl:sticky xl:top-8 xl:self-start">
-        <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">Pré-visualização</p>
-        <div className="mx-auto h-[780px] w-[380px] overflow-hidden rounded-[3rem] border-[10px] border-slate-900 shadow-2xl">
+        <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-ink-400">Pré-visualização</p>
+        <div className="mx-auto h-[780px] w-[380px] overflow-hidden rounded-[3rem] border-[10px] border-black shadow-2xl ring-1 ring-white/10">
           <div className="h-full overflow-y-auto">
             <PortalShell theme={data.theme} title={data.welcomeTitle}>
-              <div className="flex flex-col gap-3 rounded-[2rem] border border-white/15 bg-black/30 p-6 backdrop-blur-xl">
+              <div className="flex flex-col gap-3 rounded-[2rem] border border-snow/15 bg-black/25 p-6 backdrop-blur-2xl">
                 <p className="text-center text-sm opacity-90">Cadastre-se e receba o código de acesso no seu WhatsApp.</p>
-                <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3.5 opacity-60">Seu nome</div>
-                <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3.5 opacity-60">WhatsApp</div>
-                <div className="rounded-2xl bg-[var(--primary)] px-4 py-4 text-center text-lg font-bold text-white">Receber código no WhatsApp</div>
+                <div className="rounded-2xl border border-snow/20 bg-snow/10 px-4 py-3.5 opacity-60">Seu nome</div>
+                <div className="rounded-2xl border border-snow/20 bg-snow/10 px-4 py-3.5 opacity-60">WhatsApp</div>
+                <div className="flex items-center justify-center gap-2 rounded-2xl bg-[var(--primary)] px-4 py-4 text-base font-bold text-snow shadow-[0_14px_40px_-12px_var(--primary)]"><MessageCircle className="h-5 w-5" /> Receber código no WhatsApp</div>
               </div>
               <BlocksRenderer blocks={data.blocks} />
             </PortalShell>

@@ -31,7 +31,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   await db.portalEvent.create({ data: { type: "VIEW", portalId: portal.id, locationId: location.id, mac } });
 
   return (
-    <PortalShell theme={portal.theme as Theme} title={portal.welcomeTitle}>
+    <PortalShell theme={portal.theme as Theme} title={portal.welcomeTitle} place={location.city ? `${location.name} · ${location.city}` : undefined}>
       <PortalFlow
         hotspot={{ mac, ip: params.ip ?? "", server: params.server, iface: params.iface ?? "", loginUrl: params.login, dst: params.dst ?? "" }}
         portal={{

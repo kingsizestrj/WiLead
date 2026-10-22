@@ -19,10 +19,10 @@ const fill = (text: string, examples: string[]) => text.replace(/\{\{(\d+)\}\}/g
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+    <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
       {label}
       {children}
-      {hint && <span className="font-normal text-slate-400">{hint}</span>}
+      {hint && <span className="font-normal text-ink-400">{hint}</span>}
     </label>
   );
 }
@@ -30,13 +30,13 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 function Preview({ header, body, footer, buttons }: { header?: string; body: string; footer?: string; buttons: string[] }) {
   return (
     <div className="self-start rounded-2xl bg-[#e5ddd5] p-4">
-      <div className="max-w-[300px] rounded-xl rounded-tl-none bg-white p-3 text-sm shadow">
+      <div className="max-w-[300px] rounded-xl rounded-tl-none bg-snow p-3 text-sm text-[#111b21] shadow">
         {header && <p className="mb-1 font-bold">{header}</p>}
         <p className="whitespace-pre-line">{body || "Texto da mensagem..."}</p>
-        {footer && <p className="mt-1 text-xs text-slate-400">{footer}</p>}
+        {footer && <p className="mt-1 text-xs text-ink-400">{footer}</p>}
       </div>
       {buttons.map((b, i) => (
-        <div key={i} className="mt-1 max-w-[300px] rounded-xl bg-white py-2 text-center text-sm font-medium text-sky-600 shadow">
+        <div key={i} className="mt-1 max-w-[300px] rounded-xl bg-snow py-2 text-center text-sm font-medium text-[#0b84c4] shadow">
           {b || "Botão"}
         </div>
       ))}
@@ -58,9 +58,9 @@ function useSubmit() {
 function Feedback({ result }: { result: { ok?: boolean; error?: string } | null }) {
   if (!result) return null;
   return result.ok ? (
-    <p className="text-sm text-emerald-700">✅ Enviado para a Meta. A aprovação costuma levar alguns minutos; o status aparece na lista ao lado.</p>
+    <p className="text-sm text-emerald-300">✅ Enviado para a Meta. A aprovação costuma levar alguns minutos; o status aparece na lista ao lado.</p>
   ) : (
-    <p className="text-sm text-red-600">❌ {result.error}</p>
+    <p className="text-sm text-rose-300">❌ {result.error}</p>
   );
 }
 
@@ -81,7 +81,7 @@ function AuthenticationForm({ defaultName }: { defaultName: string }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div className="flex flex-col gap-3">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-ink-300">
           A Meta define o texto dos templates de autenticação. Você escolhe o aviso de segurança, a validade e o botão de copiar.
         </p>
         <Field label="Nome" hint="Precisa ser igual a WHATSAPP_OTP_TEMPLATE no .env do servidor.">
@@ -205,7 +205,7 @@ function MessageForm() {
         </Field>
 
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-slate-500">Botões (opcional)</span>
+          <span className="text-xs font-medium text-ink-300">Botões (opcional)</span>
           {buttons.map((b, i) => (
             <div key={i} className="grid gap-2 md:grid-cols-[150px_1fr_1fr_auto]">
               <select className={inputClass} value={b.type} onChange={(e) => setButton(i, { type: e.target.value as ButtonDraft["type"] })}>
@@ -218,7 +218,7 @@ function MessageForm() {
                 <input className={inputClass} placeholder={b.type === "URL" ? "https://..." : "+5522999999999"} value={b.value}
                   onChange={(e) => setButton(i, { value: e.target.value })} />
               )}
-              <button type="button" className="px-2 text-sm text-red-600" onClick={() => setButtons(buttons.filter((_, j) => j !== i))}>Remover</button>
+              <button type="button" className="px-2 text-sm text-rose-300" onClick={() => setButtons(buttons.filter((_, j) => j !== i))}>Remover</button>
             </div>
           ))}
           {buttons.length < MAX_BUTTONS && (
@@ -247,12 +247,12 @@ function MessageForm() {
 export function TemplateCreator({ otpTemplate, otpStatus }: { otpTemplate: string; otpStatus: string | null }) {
   const [tab, setTab] = useState<"auth" | "message">(otpStatus ? "message" : "auth");
   const tabClass = (active: boolean) =>
-    `rounded-lg px-4 py-2 text-sm font-semibold ${active ? "bg-violet-600 text-white" : "bg-white text-slate-600 hover:bg-slate-100"}`;
+    `rounded-lg px-4 py-2 text-sm font-semibold ${active ? "bg-brand text-snow shadow-glow" : "bg-white text-ink-300 hover:bg-white/5"}`;
 
   return (
     <Card>
       {!otpStatus && (
-        <p className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <p className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
           O template do código do Wi-Fi (<b>{otpTemplate}</b>) ainda não existe na Meta. Crie na aba &quot;Código do Wi-Fi&quot;.
         </p>
       )}

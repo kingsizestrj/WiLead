@@ -37,9 +37,9 @@ export default async function AccessesPage({ searchParams }: { searchParams: Pro
       <PageHeader title="Acessos" subtitle={`${total} liberações no período`} />
       <FilterBar filters={filters} locations={locations} type />
       {failures.length > 0 && (
-        <section className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4">
-          <h2 className="mb-2 text-sm font-semibold text-red-700">Falhas ao liberar no período (últimas {failures.length})</h2>
-          <ul className="flex flex-col gap-1 text-sm text-red-800">
+        <section className="mb-6 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4">
+          <h2 className="mb-2 text-sm font-semibold text-rose-200">Falhas ao liberar no período (últimas {failures.length})</h2>
+          <ul className="flex flex-col gap-1 text-sm text-rose-200">
             {failures.map((f) => (
               <li key={f.id}>
                 {f.createdAt.toLocaleString("pt-BR", { timeZone: TZ })} · {f.location.name} · {f.clientName} ({f.mac}): <b>{f.error}</b>
@@ -56,7 +56,7 @@ export default async function AccessesPage({ searchParams }: { searchParams: Pro
             <td className={`${td} font-medium`}>{a.client.name}</td>
             <td className={td}>{formatPhone(a.client.phone)}</td>
             <td className={td}>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${a.type === "NEW" ? "bg-emerald-100 text-emerald-700" : "bg-sky-100 text-sky-700"}`}>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${a.type === "NEW" ? "bg-emerald-500/15 text-emerald-300" : "bg-sky-500/15 text-sky-300"}`}>
                 {a.type === "NEW" ? "Novo" : "Recorrente"}
               </span>
             </td>

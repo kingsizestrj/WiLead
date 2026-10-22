@@ -24,9 +24,9 @@ export default async function PortalsPage() {
               <div className="h-28 rounded-xl" style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.backgroundColor})` }} />
               <div>
                 <h3 className="font-semibold">
-                  {p.name} {p.isDefault && <span className="ml-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs text-violet-700">padrão</span>}
+                  {p.name} {p.isDefault && <span className="ml-1 rounded-full bg-fuchsia-500/15 px-2 py-0.5 text-xs text-fuchsia-300">padrão</span>}
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-ink-300">
                   {p.locations.length ? p.locations.map((l) => l.name).join(", ") : p.isDefault ? "Locais sem página definida" : "Nenhum local"}
                 </p>
               </div>
@@ -36,7 +36,7 @@ export default async function PortalsPage() {
                 {!p.isDefault && (
                   <>
                     <form action={setDefaultPortal.bind(null, p.id)}><button className={ghostButtonClass}>Tornar padrão</button></form>
-                    <form action={deletePortal.bind(null, p.id)}><button className={`${ghostButtonClass} text-red-600`}>Excluir</button></form>
+                    <form action={deletePortal.bind(null, p.id)}><button className={`${ghostButtonClass} text-rose-300`}>Excluir</button></form>
                   </>
                 )}
               </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { MessageCircle, Wifi } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BlocksRenderer, Video } from "@/components/BlocksRenderer";
 import type { Block } from "@/lib/blocks";
@@ -17,9 +18,9 @@ type Grant = { username: string; password: string; minutes: number };
 type Step = "confirm" | "register" | "code" | "ad" | "connecting";
 
 const input =
-  "w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-3.5 text-base placeholder:text-current/50 outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/40";
+  "w-full rounded-2xl border border-snow/20 bg-snow/10 px-4 py-3.5 text-base placeholder:text-current/50 outline-none transition focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/25";
 const primaryButton =
-  "w-full rounded-2xl bg-[var(--primary)] px-4 py-4 text-lg font-bold text-white shadow-lg shadow-black/20 transition active:scale-[.98] disabled:opacity-60";
+  "flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--primary)] px-4 py-4 text-base font-bold text-snow shadow-[0_14px_40px_-12px_var(--primary)] ring-1 ring-snow/20 transition hover:brightness-110 active:scale-[.98] disabled:opacity-60";
 
 function formatPhoneInput(value: string) {
   const d = value.replace(/\D/g, "").slice(0, 11);
@@ -114,7 +115,7 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
 
   return (
     <>
-      <div className="rounded-[2rem] border border-white/15 bg-black/30 p-6 shadow-2xl backdrop-blur-xl">
+      <div className="animate-fade-up rounded-[2rem] border border-snow/15 bg-black/25 p-6 shadow-2xl backdrop-blur-2xl">
         {step === "confirm" && known && (
           <div className="flex flex-col gap-4 text-center">
             <p className="text-sm uppercase tracking-[0.2em] opacity-70">Que bom te ver de novo</p>
@@ -123,7 +124,7 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
               <span className="mt-1 block text-base font-normal opacity-80">WhatsApp {known.phone}</span>
             </p>
             <button className={primaryButton} disabled={busy} onClick={confirmReturning}>
-              {busy ? "Conectando..." : "Sim, sou eu"}
+              {busy ? "Conectando..." : <><Wifi className="h-5 w-5" /> Sim, sou eu</>}
             </button>
             <button className="py-2 text-sm underline opacity-80" onClick={() => setStep("register")}>
               Não sou eu
@@ -152,7 +153,7 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
               Quero receber novidades e promoções pelo WhatsApp
             </label>
             <button className={primaryButton} disabled={busy}>
-              {busy ? "Enviando..." : "Receber código no WhatsApp"}
+              {busy ? "Enviando..." : <><MessageCircle className="h-5 w-5" /> Receber código no WhatsApp</>}
             </button>
             <p className="text-center text-xs opacity-60">{portal.termsText}</p>
           </form>
@@ -170,7 +171,7 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
               Enviamos um código de 6 dígitos para o WhatsApp <b>{form.phone}</b>
             </p>
             {whatsappMinutes > 0 && (
-              <p className="rounded-xl bg-white/10 px-4 py-2 text-sm">
+              <p className="rounded-xl bg-snow/10 px-4 py-2 text-sm">
                 Sem internet no celular? O WhatsApp já está liberado neste Wi-Fi por {whatsappMinutes} minutos: abra, copie o código e volte aqui.
               </p>
             )}
@@ -178,7 +179,7 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
               autoComplete="one-time-code" maxLength={6} pattern="\d{6}" placeholder="••••••" autoFocus
               value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} />
             <button className={primaryButton} disabled={busy || code.length !== 6}>
-              {busy ? "Verificando..." : "Liberar internet"}
+              {busy ? "Verificando..." : <><Wifi className="h-5 w-5" /> Liberar internet</>}
             </button>
             <div className="flex justify-between text-sm opacity-80">
               <button type="button" className="underline" onClick={() => setStep("register")}>Corrigir número</button>
@@ -197,12 +198,12 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
 
         {step === "connecting" && (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <div className="size-10 animate-spin rounded-full border-4 border-white/30 border-t-[var(--primary)]" />
+            <div className="size-10 animate-spin rounded-full border-4 border-snow/30 border-t-[var(--primary)]" />
             <p className="font-semibold">Conectando você...</p>
           </div>
         )}
 
-        {error && <p className="mt-4 rounded-xl bg-red-500/20 px-4 py-3 text-center text-sm">{error}</p>}
+        {error && <p className="mt-4 rounded-xl bg-rose-500/25 px-4 py-3 text-center text-sm">{error}</p>}
       </div>
 
       <BlocksRenderer blocks={portal.blocks} onClick={(id) => track("BLOCK_CLICK", id)} />

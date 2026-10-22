@@ -1,7 +1,8 @@
 import { Prisma } from "@prisma/client";
+import { Clapperboard, Clock, Eye, MapPin, Megaphone, MousePointerClick, Repeat, Smartphone, TrendingUp, UserPlus, Wifi } from "lucide-react";
 import { DailyChart, HourChart } from "@/components/admin/Charts";
 import { FilterBar } from "@/components/admin/FilterBar";
-import { Card, PageHeader, Stat, Table, td } from "@/components/admin/ui";
+import { Card, Empty, PageHeader, Stat } from "@/components/admin/ui";
 import { db } from "@/lib/db";
 import { parseFilters } from "@/lib/filters";
 
@@ -51,46 +52,82 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const eventCount = (type: string) => events.find((e) => e.type === type)?._count ?? 0;
   const views = eventCount("VIEW");
 
+  const hour = Number(new Intl.DateTimeFormat("pt-BR", { hour: "numeric", hour12: false, timeZone: TZ }).format(new Date()));
+  const hello = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+  const maxLocation = perLocation[0]?._count ?? 0;
+  const media = [
+    { label: "Visualizações do portal", value: views, icon: Eye },
+    { label: "Vídeos assistidos", value: eventCount("AD_VIDEO_COMPLETED"), icon: Clapperboard },
+    { label: "Cliques em anúncios", value: eventCount("BLOCK_CLICK"), icon: MousePointerClick },
+    { label: "Conversão (acesso/visita)", value: views ? `${Math.round((total / views) * 100)}%` : "—", icon: TrendingUp },
+  ];
+
   return (
     <>
-      <PageHeader title="Dashboard" subtitle="De onde vêm e como se comportam seus clientes" />
+      <PageHeader
+        title={
+          <>
+            {hello}, <span className="text-gradient">bem-vindo</span>
+          </>
+        }
+        subtitle="De onde vêm e como se comportam os clientes do seu Wi-Fi"
+      />
       <FilterBar filters={filters} locations={locations} />
 
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat label="Acessos liberados" value={total} />
-        <Stat label="Novos clientes" value={newClients} hint={`${optIns} aceitaram receber promoções`} />
-        <Stat label="Dispositivos únicos" value={devices} />
-        <Stat label="Taxa de retorno" value={total ? `${Math.round((returning / total) * 100)}%` : "—"} hint="acessos de quem já era cliente" />
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat label="Acessos liberados" value={total.toLocaleString("pt-BR")} icon={<Wifi className="h-4 w-4" />} accent="bg-violet-500" />
+        <Stat label="Novos clientes" value={newClients.toLocaleString("pt-BR")} hint={`${optIns} aceitaram receber promoções`} icon={<UserPlus className="h-4 w-4" />} accent="bg-fuchsia-500" />
+        <Stat label="Aparelhos únicos" value={devices.toLocaleString("pt-BR")} icon={<Smartphone className="h-4 w-4" />} accent="bg-orange-500" />
+        <Stat
+          label="Taxa de retorno"
+          value={total ? `${Math.round((returning / total) * 100)}%` : "—"}
+          hint="acessos de quem já era cliente"
+          icon={<Repeat className="h-4 w-4" />}
+          accent="bg-sky-500"
+        />
       </div>
 
-      <div className="mb-6 grid gap-4 lg:grid-cols-3">
-        <Card title="Acessos por dia e local" className="lg:col-span-2">
-          <DailyChart data={dailyData} series={series} />
+      <div className="mb-6 grid gap-6 xl:grid-cols-3">
+        <Card title="Acessos por dia e local" icon={<TrendingUp className="h-4 w-4" />} className="xl:col-span-2">
+          {dailyData.length ? <DailyChart data={dailyData} series={series} /> : <Empty icon={<TrendingUp className="h-6 w-6" />} title="Sem acessos no período" />}
         </Card>
-        <Card title="Ranking de locais">
-          <ol className="flex flex-col gap-3">
+        <Card title="Ranking de locais" icon={<MapPin className="h-4 w-4" />}>
+          <ol className="flex flex-col gap-4">
             {perLocation.map((row, i) => (
-              <li key={row.locationId} className="flex items-center justify-between text-sm">
-                <span><span className="mr-2 text-slate-400">{i + 1}.</span>{locationName.get(row.locationId)}</span>
-                <span className="font-semibold">{row._count}</span>
+              <li key={row.locationId} className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="truncate">
+                    <span className="mr-2 font-bold text-ink-400">{i + 1}</span>
+                    {locationName.get(row.locationId)}
+                  </span>
+                  <span className="font-bold">{row._count}</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/5">
+                  <div className="h-full rounded-full bg-brand" style={{ width: `${(row._count / maxLocation) * 100}%` }} />
+                </div>
               </li>
             ))}
-            {!perLocation.length && <p className="text-sm text-slate-400">Sem acessos no período.</p>}
+            {!perLocation.length && <p className="text-sm text-ink-400">Sem acessos no período.</p>}
           </ol>
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card title="Horários de pico" className="lg:col-span-2">
+      <div className="grid gap-6 xl:grid-cols-3">
+        <Card title="Horários de pico" icon={<Clock className="h-4 w-4" />} className="xl:col-span-2">
           <HourChart data={hourData} />
         </Card>
-        <Card title="Mídia / anúncios">
-          <Table head={["Métrica", "Total"]}>
-            <tr><td className={td}>Visualizações do portal</td><td className={td}>{views}</td></tr>
-            <tr><td className={td}>Vídeos assistidos</td><td className={td}>{eventCount("AD_VIDEO_COMPLETED")}</td></tr>
-            <tr><td className={td}>Cliques em anúncios</td><td className={td}>{eventCount("BLOCK_CLICK")}</td></tr>
-            <tr><td className={td}>Conversão (acesso/visita)</td><td className={td}>{views ? `${Math.round((total / views) * 100)}%` : "—"}</td></tr>
-          </Table>
+        <Card title="Mídia e anúncios" icon={<Megaphone className="h-4 w-4" />}>
+          <ul className="flex flex-col gap-3">
+            {media.map(({ label, value, icon: Icon }) => (
+              <li key={label} className="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3">
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-soft text-fuchsia-300">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span className="flex-1 text-sm text-ink-300">{label}</span>
+                <span className="text-lg font-extrabold">{value}</span>
+              </li>
+            ))}
+          </ul>
         </Card>
       </div>
     </>

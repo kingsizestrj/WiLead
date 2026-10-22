@@ -19,36 +19,36 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Acesso">
           <form action={saveSettings} className="flex flex-col gap-3">
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-600">
+            <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
               Tempo de internet por liberação (minutos)
               <input name="sessionMinutes" type="number" min={1} defaultValue={settings.sessionMinutes} className={inputClass} />
             </label>
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-600">
+            <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
               Validade do código do WhatsApp (minutos)
               <input name="otpTtlMinutes" type="number" min={1} defaultValue={settings.otpTtlMinutes} className={inputClass} />
             </label>
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-600">
+            <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
               Máximo de códigos por telefone/aparelho por hora
               <input name="otpMaxPerHour" type="number" min={1} defaultValue={settings.otpMaxPerHour} className={inputClass} />
             </label>
-            <label className="flex flex-col gap-1 text-sm font-medium text-slate-600">
+            <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
               Minutos de WhatsApp liberado para quem pede o código (0 = desligado)
               <input name="otpWhatsappMinutes" type="number" min={0} max={15} defaultValue={settings.otpWhatsappMinutes} className={inputClass} />
-              <span className="text-xs font-normal text-slate-400">Para quem está sem 4G conseguir ler o código. Precisa do bloco 4 do mikrotik/setup.rsc.</span>
+              <span className="text-xs font-normal text-ink-400">Para quem está sem 4G conseguir ler o código. Precisa do bloco 4 do mikrotik/setup.rsc.</span>
             </label>
             <button className={`${buttonClass} self-start`}>Salvar</button>
           </form>
         </Card>
         <Card title="Chatwoot (WhatsApp)">
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-            <dt className="text-slate-500">Status</dt>
+            <dt className="text-ink-300">Status</dt>
             <dd>{process.env.CHATWOOT_DRY_RUN === "true" ? "🧪 Modo teste (código só no log)" : chatwootReady ? "✅ Configurado" : "❌ Faltam variáveis"}</dd>
-            <dt className="text-slate-500">Chatwoot</dt>
+            <dt className="text-ink-300">Chatwoot</dt>
             <dd className="font-mono">{process.env.CHATWOOT_URL ?? "—"} · conta {process.env.CHATWOOT_ACCOUNT_ID ?? "—"} · caixa {process.env.CHATWOOT_INBOX_ID ?? "—"}</dd>
-            <dt className="text-slate-500">Template do código</dt>
+            <dt className="text-ink-300">Template do código</dt>
             <dd className="font-mono">{process.env.WHATSAPP_OTP_TEMPLATE ?? "—"} ({process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "pt_BR"})</dd>
           </dl>
-          <p className="mt-4 text-sm text-slate-600">
+          <p className="mt-4 text-sm text-ink-300">
             Cada cliente vira contato no Chatwoot com as etiquetas <b>wifi</b>, <b>wifi-&lt;local&gt;</b> e, se aceitou, <b>{PROMO_LABEL}</b>.
             Use essas etiquetas como público das campanhas de WhatsApp no Chatwoot.
           </p>

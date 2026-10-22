@@ -1,4 +1,84 @@
 @import "tailwindcss";
+@import "@fontsource-variable/plus-jakarta-sans";
+
+/* Painel: tema escuro por padrão; html.light troca os tons (mesmo sistema visual do Sendtec).
+   "white" é a cor do texto do tema e "snow" é branco de verdade nos dois temas. */
+@theme {
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-white: rgb(var(--c-white));
+  --color-snow: #ffffff;
+  --color-ink-950: rgb(var(--ink-950));
+  --color-ink-900: rgb(var(--ink-900));
+  --color-ink-800: rgb(var(--ink-800));
+  --color-ink-700: rgb(var(--ink-700));
+  --color-ink-600: rgb(var(--ink-600));
+  --color-ink-400: rgb(var(--ink-400));
+  --color-ink-300: rgb(var(--ink-300));
+  --shadow-glow: 0 10px 40px -10px rgba(219, 39, 119, 0.55);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 20px 50px -20px rgba(0, 0, 0, 0.6);
+  --animate-fade-up: fade-up 0.35s ease-out both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+:root {
+  color-scheme: dark;
+  --c-white: 255 255 255;
+  --ink-950: 7 6 13;
+  --ink-900: 13 11 24;
+  --ink-800: 21 18 42;
+  --ink-700: 31 27 58;
+  --ink-600: 44 39 82;
+  --ink-400: 139 134 179;
+  --ink-300: 180 176 212;
+}
+
+html.light {
+  color-scheme: light;
+  --c-white: 24 20 43;
+  --ink-950: 246 245 251;
+  --ink-900: 255 255 255;
+  --ink-800: 241 239 249;
+  --ink-700: 229 226 242;
+  --ink-600: 211 207 230;
+  --ink-400: 108 104 138;
+  --ink-300: 77 73 106;
+}
+
+/* Tons de status feitos para fundo escuro ficam mais fortes no tema claro */
+html.light .text-emerald-300 { color: #047857; }
+html.light .text-amber-300, html.light .text-amber-200 { color: #b45309; }
+html.light .text-rose-300, html.light .text-rose-200 { color: #be123c; }
+html.light .text-sky-300 { color: #0369a1; }
+html.light .text-fuchsia-300 { color: #a21caf; }
+html.light .glass { box-shadow: 0 1px 2px rgba(24, 20, 43, 0.04), 0 12px 32px -18px rgba(24, 20, 43, 0.25); }
+
+@utility bg-brand {
+  background-image: linear-gradient(135deg, #7c3aed 0%, #db2777 55%, #f97316 100%);
+}
+@utility bg-brand-soft {
+  background-image: linear-gradient(135deg, rgba(124, 58, 237, 0.18), rgba(219, 39, 119, 0.14) 55%, rgba(249, 115, 22, 0.12));
+}
+@utility text-gradient {
+  background-image: linear-gradient(135deg, #a78bfa 0%, #f472b6 55%, #fb923c 100%);
+  background-clip: text;
+  color: transparent;
+}
+@utility glass {
+  background-color: rgb(var(--c-white) / 0.035);
+  border: 1px solid rgb(var(--c-white) / 0.07);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-card);
+}
 
 html,
 body {
@@ -6,6 +86,18 @@ body {
 }
 
 body {
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
+  @apply bg-ink-950 font-sans text-white antialiased;
 }
+
+/* Fundo com brilhos do painel (o portal do cliente tem o próprio fundo, com as cores do local) */
+.app-bg {
+  background-image:
+    radial-gradient(900px 500px at 10% -10%, rgba(124, 58, 237, 0.22), transparent 60%),
+    radial-gradient(700px 400px at 100% 0%, rgba(219, 39, 119, 0.16), transparent 60%),
+    radial-gradient(600px 400px at 50% 110%, rgba(249, 115, 22, 0.1), transparent 60%);
+  background-attachment: fixed;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgb(var(--ink-600)); border-radius: 10px; border: 2px solid rgb(var(--ink-900)); }
+::-webkit-scrollbar-track { background: transparent; }

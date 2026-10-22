@@ -1,6 +1,17 @@
 "use client";
 
+import { Check, Copy, MessageCircle, Ticket, Zap } from "lucide-react";
 import { useState } from "react";
+
+function InstagramIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-6 w-6" aria-hidden>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" />
+    </svg>
+  );
+}
 import type { Block } from "@/lib/blocks";
 
 function youtubeId(url: string) {
@@ -35,8 +46,9 @@ function Carousel({ images }: { images: string[] }) {
 function Coupon({ block }: { block: Extract<Block, { type: "coupon" }> }) {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="rounded-3xl border-2 border-dashed border-white/40 bg-white/10 p-5 text-center backdrop-blur">
-      <p className="text-xs uppercase tracking-[0.2em] opacity-70">Cupom exclusivo Wi-Fi</p>
+    <div className="relative overflow-hidden rounded-3xl border-2 border-dashed border-snow/40 bg-snow/10 p-5 text-center backdrop-blur">
+      <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-[var(--primary)] opacity-40 blur-2xl" />
+      <p className="flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] opacity-80"><Ticket className="h-4 w-4" /> Cupom exclusivo Wi-Fi</p>
       <p className="mt-1 text-3xl font-black">{block.title}</p>
       <button
         type="button"
@@ -44,9 +56,9 @@ function Coupon({ block }: { block: Extract<Block, { type: "coupon" }> }) {
           navigator.clipboard?.writeText(block.code);
           setCopied(true);
         }}
-        className="mt-3 rounded-xl bg-white px-5 py-2 font-mono text-lg font-bold tracking-widest text-black"
+        className="relative mt-3 inline-flex items-center gap-2 rounded-xl bg-snow px-5 py-2 font-mono text-lg font-bold tracking-widest text-black transition active:scale-[.98]"
       >
-        {copied ? "Copiado!" : block.code}
+        {copied ? <><Check className="h-5 w-5" /> Copiado!</> : <><Copy className="h-5 w-5" /> {block.code}</>}
       </button>
       <p className="mt-2 text-sm opacity-80">{block.description}</p>
     </div>
@@ -59,16 +71,24 @@ function Plans({ block }: { block: Extract<Block, { type: "plans" }> }) {
     .map((line) => line.split("|").map((part) => part.trim()))
     .filter(([name]) => name);
   return (
-    <section className="flex flex-col gap-3">
-      {block.title && <h2 className="px-1 text-xl font-extrabold">{block.title}</h2>}
-      {plans.map(([name, price, details]) => (
-        <div key={name} className="rounded-3xl border border-white/15 bg-white/10 p-5 backdrop-blur">
-          <p className="font-bold">{name}</p>
-          {price && <p className="mt-1 text-2xl font-black text-[var(--primary)]">{price}</p>}
-          {details && <p className="mt-1 text-sm opacity-80">{details}</p>}
-        </div>
-      ))}
-      {block.footnote && <p className="whitespace-pre-line px-1 text-xs opacity-70">{block.footnote}</p>}
+    <section className="overflow-hidden rounded-3xl border border-snow/15 bg-snow/10 backdrop-blur">
+      {block.title && (
+        <h2 className="flex items-center gap-2 border-b border-snow/10 bg-[var(--primary)]/20 px-5 py-3 text-lg font-extrabold">
+          <Zap className="h-5 w-5 text-[var(--primary)]" /> {block.title}
+        </h2>
+      )}
+      <ul className="divide-y divide-snow/10">
+        {plans.map(([name, price, details]) => (
+          <li key={name} className="flex items-center justify-between gap-3 px-5 py-3.5">
+            <span className="font-semibold">{name}</span>
+            <span className="text-right">
+              {price && <span className="block text-lg font-extrabold leading-tight text-[var(--primary)]">{price}</span>}
+              {details && <span className="block text-xs opacity-75">{details}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {block.footnote && <p className="whitespace-pre-line border-t border-snow/10 px-5 py-3 text-xs opacity-75">{block.footnote}</p>}
     </section>
   );
 }
@@ -80,7 +100,7 @@ export function BlocksRenderer({ blocks, onClick }: { blocks: Block[]; onClick?:
         switch (block.type) {
           case "hero":
             return (
-              <section key={block.id} className="overflow-hidden rounded-3xl bg-white/10 backdrop-blur">
+              <section key={block.id} className="overflow-hidden rounded-3xl bg-snow/10 backdrop-blur">
                 {block.imageUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={block.imageUrl} alt="" className="h-48 w-full object-cover" />
@@ -112,12 +132,12 @@ export function BlocksRenderer({ blocks, onClick }: { blocks: Block[]; onClick?:
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => onClick?.(block.id)}
-                className="block overflow-hidden rounded-3xl bg-white/10"
+                className="block overflow-hidden rounded-3xl bg-snow/10"
               >
                 {content}
               </a>
             ) : (
-              <div key={block.id} className="overflow-hidden rounded-3xl bg-white/10">
+              <div key={block.id} className="overflow-hidden rounded-3xl bg-snow/10">
                 {content}
               </div>
             );
@@ -138,9 +158,9 @@ export function BlocksRenderer({ blocks, onClick }: { blocks: Block[]; onClick?:
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => onClick?.(block.id)}
-                className="flex items-center justify-center gap-3 rounded-3xl bg-[#25d366] px-5 py-4 text-lg font-bold text-white shadow-lg"
+                className="flex items-center justify-center gap-3 rounded-3xl bg-[#25d366] px-5 py-4 text-lg font-bold text-snow shadow-[0_14px_40px_-12px_#25d366] ring-1 ring-snow/20 transition active:scale-[.98]"
               >
-                <span className="text-2xl">💬</span> {block.label}
+                <MessageCircle className="h-6 w-6" /> {block.label}
               </a>
             ) : null;
           case "instagram":
@@ -151,9 +171,9 @@ export function BlocksRenderer({ blocks, onClick }: { blocks: Block[]; onClick?:
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => onClick?.(block.id)}
-                className="flex items-center gap-4 rounded-3xl bg-gradient-to-tr from-[#feda75] via-[#d62976] to-[#4f5bd5] p-5 text-white"
+                className="flex items-center gap-4 rounded-3xl bg-gradient-to-tr from-[#feda75] via-[#d62976] to-[#4f5bd5] p-5 text-snow shadow-[0_14px_40px_-12px_#d62976] transition active:scale-[.98]"
               >
-                <span className="grid size-12 place-items-center rounded-2xl border-2 border-white text-2xl">◎</span>
+                <span className="grid size-12 place-items-center rounded-2xl bg-snow/20 ring-1 ring-snow/40"><InstagramIcon /></span>
                 <span>
                   <span className="block text-lg font-bold">@{block.handle.replace("@", "")}</span>
                   <span className="block text-sm opacity-90">{block.text}</span>

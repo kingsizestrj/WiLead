@@ -7,29 +7,29 @@ import { deleteRouter, saveRouter } from "../actions";
 function RouterForm({ router }: { router?: Router }) {
   return (
     <form action={saveRouter.bind(null, router?.id ?? null)} className="grid items-end gap-3 md:grid-cols-3">
-      <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+      <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
         Nome
         <input name="name" required defaultValue={router?.name} placeholder="CCR1036 Matriz" className={inputClass} />
       </label>
       <div className="grid grid-cols-[1fr_96px] gap-3">
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+        <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
           IP / host
           <input name="host" required defaultValue={router?.host} placeholder="10.0.0.1" className={inputClass} />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+        <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
           Porta
           <input name="port" type="number" required defaultValue={router?.port ?? 8728} className={inputClass} />
         </label>
       </div>
-      <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+      <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
         Perfil de usuário hotspot
         <input name="userProfile" defaultValue={router?.userProfile ?? "default"} className={inputClass} />
       </label>
-      <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+      <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
         Usuário
         <input name="username" required defaultValue={router?.username} className={inputClass} />
       </label>
-      <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+      <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
         Senha
         <input name="password" type="password" required={!router} placeholder={router ? "(manter atual)" : ""} className={inputClass} />
       </label>
@@ -55,10 +55,10 @@ export default async function RoutersPage() {
         {routers.map((r) => (
           <Card key={r.id} title={`${r.name} · ${r._count.locations} locais`}>
             <RouterForm router={r} />
-            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
+            <div className="mt-4 flex items-center justify-between border-t border-white/5 pt-4">
               <TestRouterButton id={r.id} />
               <form action={deleteRouter.bind(null, r.id)}>
-                <button className={`${ghostButtonClass} text-red-600`}>Remover</button>
+                <button className={`${ghostButtonClass} text-rose-300`}>Remover</button>
               </form>
             </div>
           </Card>

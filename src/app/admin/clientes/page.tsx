@@ -33,7 +33,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
           <tr key={c.id}>
             <td className={`${td} font-medium`}>{c.name}</td>
             <td className={td}>
-              <a className="text-violet-600 hover:underline" href={`https://wa.me/${c.phone}`} target="_blank" rel="noreferrer">{formatPhone(c.phone)}</a>
+              <a className="text-fuchsia-300 hover:underline" href={`https://wa.me/${c.phone}`} target="_blank" rel="noreferrer">{formatPhone(c.phone)}</a>
             </td>
             <td className={td}>{c.email ?? "—"}</td>
             <td className={td}>{c.marketingOptIn ? "✅" : "—"}</td>
