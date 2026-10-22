@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Router {
+  id          String     @id @default(cuid())
+  name        String
+  // Base URL of the RouterOS v7 REST API, e.g. https://10.0.0.1 or http://10.0.0.1
+  apiUrl      String
+  username    String
+  password    String
+  insecureTls Boolean    @default(true)
+  // Hotspot user profile applied to created users
+  userProfile String     @default("default")
+  createdAt   DateTime   @default(now())
+  locations   Location[]
+}
+
+// A hotspot server on the MikroTik ($(server-name)). Used to know where clients come from.
+model Location {
+  id             String      @id @default(cuid())
+  hotspotServer  String      @unique
+  name           String
+  city           String?
+  sessionMinutes Int?
+  routerId       String?
+  router         Router?     @relation(fields: [routerId], references: [id], onDelete: SetNull)
+  portalId       String?
+  portal         Portal?     @relation(fields: [portalId], references: [id], onDelete: SetNull)
+  createdAt      DateTime    @default(now())
+  accesses       Access[]
+  clients        Client[]
+  events         PortalEvent[]
+}
+
+model Portal {
+  id             String        @id @default(cuid())
+  name           String
+  isDefault      Boolean       @default(false)
+  // { primaryColor, backgroundColor, backgroundImage, logoUrl, textColor }
+  theme          Json
+  // Ordered list of content blocks (see src/lib/blocks.ts)
+  blocks         Json
+  adVideoUrl     String?
+  adSeconds      Int           @default(0)
+  welcomeTitle   String        @default("Wi-Fi grátis")
+  instagram      String?
+  redirectUrl    String?
+  termsText      String        @default("Ao conectar você concorda com os termos de uso e com o recebimento de comunicações.")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  locations      Location[]
+  events         PortalEvent[]
+}
+
+model Client {
+  id              String    @id @default(cuid())
+  name            String
+  // Digits only, with country code (e.g. 5511999999999)
+  phone           String    @unique
+  email           String?
+  marketingOptIn  Boolean   @default(false)
+  verifiedAt      DateTime
+  firstLocationId String?
+  firstLocation   Location? @relation(fields: [firstLocationId], references: [id], onDelete: SetNull)
+  createdAt       DateTime  @default(now())
+  devices         Device[]
+  accesses        Access[]
+}
+
+model Device {
+  id         String   @id @default(cuid())
+  mac        String   @unique
+  clientId   String
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userAgent  String?
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  accesses   Access[]
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  phone      String
+  mac        String
+  name       String
+  email      String?
+  optIn      Boolean   @default(false)
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, createdAt])
+  @@index([mac, createdAt])
+}
+
+enum AccessType {
+  NEW
+  RETURNING
+}
+
+model Access {
+  id             String     @id @default(cuid())
+  type           AccessType
+  clientId       String
+  client         Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  deviceId       String
+  device         Device     @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  locationId     String
+  location       Location   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  ip             String?
+  grantedMinutes Int
+  createdAt      DateTime   @default(now())
+
+  @@index([createdAt])
+  @@index([locationId, createdAt])
+}
+
+enum PortalEventType {
+  VIEW
+  AD_VIDEO_COMPLETED
+  BLOCK_CLICK
+}
+
+model PortalEvent {
+  id         String          @id @default(cuid())
+  type       PortalEventType
+  portalId   String
+  portal     Portal          @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  locationId String
+  location   Location        @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  blockId    String?
+  mac        String?
+  createdAt  DateTime        @default(now())
+
+  @@index([portalId, createdAt])
+}
+
+model Setting {
+  id                Int    @id @default(1)
+  sessionMinutes    Int    @default(240)
+  otpTtlMinutes     Int    @default(10)
+  otpMaxPerHour     Int    @default(5)
+}

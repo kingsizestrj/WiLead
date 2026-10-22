@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="pragma" content="no-cache">
+  <title>Wi-Fi</title>
+</head>
+<body>
+  <!-- Troque PORTAL_URL pelo endereço do sistema (ex.: https://wifi.voltec.com.br) -->
+  $(if error)
+  <script>var err = "$(error)";</script>
+  $(else)
+  <script>var err = "";</script>
+  $(endif)
+  <script>
+    var params = new URLSearchParams({
+      mac: "$(mac)",
+      ip: "$(ip)",
+      server: "$(server-name)",
+      login: "$(link-login-only)",
+      dst: "$(link-orig)",
+      error: err
+    });
+    window.location.replace("PORTAL_URL/p?" + params.toString());
+  </script>
+  <noscript><a href="PORTAL_URL/p?mac=$(mac-esc)&ip=$(ip)&server=$(server-name)&login=$(link-login-only-esc)&dst=$(link-orig-esc)">Clique para conectar</a></noscript>
+</body>
+</html>
