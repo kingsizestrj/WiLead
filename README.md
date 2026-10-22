@@ -47,7 +47,7 @@ Rode o mesmo comando de novo para atualizar.
 Depois:
 1. Preencha as variáveis do Chatwoot em `~/wilead/.env` e rode `docker compose up -d` dentro de `~/wilead`.
 2. No **Nginx Proxy Manager**, crie um Proxy Host:
-   - **Domain:** `wifi.voltec.net.br`;
+   - **Domain:** `wifi.voltecautomacao.com.br`;
    - **Forward:** `http://IP-DO-SERVIDOR:3000`;
    - **SSL:** novo certificado Let's Encrypt com Force SSL.
 3. O domínio precisa apontar para um IP que os clientes do hotspot alcancem. Não use o proxy da Cloudflare (nuvem laranja), porque o walled garden do MikroTik libera o portal pelo IP.
@@ -70,7 +70,7 @@ Com `CHATWOOT_DRY_RUN=true` e `HOTSPOT_DRY_RUN=true`, o código aparece no log e
 O sistema usa a API do RouterOS (serviço `api`, porta 8728, ou `api-ssl`, porta 8729), que funciona tanto no v6 quanto no v7.
 
 1. Siga `mikrotik/setup.rsc`: liberar o serviço `api`/`api-ssl` só para o IP do servidor, criar um usuário só para a API, usar `login-by=http-pap` e configurar o walled garden (portal + WhatsApp).
-2. Em `mikrotik/login.html`, troque `PORTAL_URL` pelo domínio do portal e envie o arquivo para a pasta `hotspot/` de cada servidor hotspot.
+2. Envie `mikrotik/login.html` (já aponta para `https://wifi.voltecautomacao.com.br`) para a pasta `hotspot/` de cada servidor hotspot.
 3. No painel, vá em **MikroTik → Novo roteador** (IP, porta, usuário da API e perfil de usuário do hotspot) e clique em **Testar conexão**.
 4. Depois do primeiro acesso de cada hotspot, vá em **Locais**, dê um nome e vincule o roteador.
 

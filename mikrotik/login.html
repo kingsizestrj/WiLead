@@ -7,7 +7,7 @@
   <title>Wi-Fi</title>
 </head>
 <body>
-  <!-- Troque PORTAL_URL pelo endereço do sistema (ex.: https://wifi.voltec.com.br) -->
+  <!-- Endereço do portal WiLead -->
   $(if error)
   <script>var err = "$(error)";</script>
   $(else)
@@ -22,8 +22,8 @@
       dst: "$(link-orig)",
       error: err
     });
-    window.location.replace("PORTAL_URL/p?" + params.toString());
+    window.location.replace("https://wifi.voltecautomacao.com.br/p?" + params.toString());
   </script>
-  <noscript><a href="PORTAL_URL/p?mac=$(mac-esc)&ip=$(ip)&server=$(server-name)&login=$(link-login-only-esc)&dst=$(link-orig-esc)">Clique para conectar</a></noscript>
+  <noscript><a href="https://wifi.voltecautomacao.com.br/p?mac=$(mac-esc)&ip=$(ip)&server=$(server-name)&login=$(link-login-only-esc)&dst=$(link-orig-esc)">Clique para conectar</a></noscript>
 </body>
 </html>
