@@ -7,6 +7,7 @@ const NAV = [
   { href: "/admin/clientes", label: "Clientes", icon: "👥" },
   { href: "/admin/acessos", label: "Acessos", icon: "📶" },
   { href: "/admin/paginas", label: "Landing pages", icon: "🎨" },
+  { href: "/admin/templates", label: "Templates WhatsApp", icon: "💬" },
   { href: "/admin/locais", label: "Locais", icon: "📍" },
   { href: "/admin/roteadores", label: "MikroTik", icon: "🛜" },
   { href: "/admin/config", label: "Configurações", icon: "⚙️" },

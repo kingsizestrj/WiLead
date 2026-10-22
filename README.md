@@ -105,6 +105,15 @@ Configuração:
 2. Na Meta, crie um template da categoria **Autenticação** (ex.: `codigo_wifi`, `pt_BR`) com o botão **Copiar código** e preencha `WHATSAPP_OTP_TEMPLATE`.
 3. No Chatwoot, sincronize os templates da caixa (Configurações da caixa → Templates) para o novo template aparecer.
 
+### Templates WhatsApp direto no WiLead
+
+O menu **Templates WhatsApp** cria, lista e exclui templates direto na Meta (Graph API), com pré-visualização no formato do WhatsApp:
+- **Código do Wi-Fi (autenticação):** um clique cria o template do código, com aviso de segurança, validade e botão "Copiar código".
+- **Mensagem / campanha:** templates de Marketing ou Utilidade, com título, variáveis (`{{1}}`, `{{2}}`…) e exemplos, rodapé e botões (resposta rápida, site ou ligação).
+
+As credenciais da Meta (token e conta do WhatsApp Business) vêm da caixa de WhatsApp do Chatwoot, então não precisa configurar nada a mais. Basta que o `CHATWOOT_API_TOKEN` seja de um **administrador**.
+Depois de criar ou excluir, o WiLead pede ao Chatwoot para sincronizar os templates. A lista mostra o status da Meta (em análise, aprovado ou rejeitado com o motivo).
+
 ## Landing page "Verão Conectado"
 
 O seed cria a página **Verão Conectado** como padrão: pacotes de temporada de 600 Mega e de 800 Mega com streaming, de 2 a 5 meses (valor total do pacote, anunciado em 6x).

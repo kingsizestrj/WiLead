@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { DEFAULT_THEME, newBlock, type Block, type Theme } from "@/lib/blocks";
 import { db } from "@/lib/db";
+import { createTemplate, deleteTemplate, type NewTemplate } from "@/lib/meta-templates";
 import { testRouter } from "@/lib/mikrotik";
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
@@ -140,4 +141,21 @@ export async function changePassword(form: FormData) {
   if (password.length < 8 || password !== str(form, "confirm")) redirect("/admin/config?senha=nova-invalida");
   await db.adminUser.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(password, 10) } });
   redirect("/admin/config?senha=ok");
+}
+
+export async function createWhatsappTemplate(input: NewTemplate): Promise<{ error?: string }> {
+  await requireAdmin();
+  try {
+    await createTemplate(input);
+  } catch (error) {
+    return { error: (error as Error).message };
+  }
+  revalidatePath("/admin/templates");
+  return {};
+}
+
+export async function deleteWhatsappTemplate(name: string) {
+  await requireAdmin();
+  await deleteTemplate(name);
+  revalidatePath("/admin/templates");
 }

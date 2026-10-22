@@ -110,3 +110,15 @@ export async function syncContact(opts: {
     },
   });
 }
+
+// Meta credentials (token + WhatsApp Business Account) already configured on the Chatwoot inbox.
+// Requires the API token of an administrator.
+export async function whatsappInboxConfig() {
+  const inbox = await api<{ provider_config?: { api_key: string; business_account_id: string } }>("GET", `/inboxes/${env().inboxId}`);
+  if (!inbox.provider_config) throw new Error("O token do Chatwoot precisa ser de um administrador para acessar a caixa do WhatsApp.");
+  return { token: inbox.provider_config.api_key, wabaId: inbox.provider_config.business_account_id };
+}
+
+export async function syncInboxTemplates() {
+  await api("POST", `/inboxes/${env().inboxId}/sync_templates`);
+}
