@@ -1,6 +1,6 @@
-# Voltec Hotspot
+# WiLead
 
-Gestão de hotspot Wi-Fi com MikroTik, landing page personalizada e verificação por código no WhatsApp. Todas as mensagens saem pelo Chatwoot (caixa WhatsApp Cloud da Meta).
+Wi-Fi que vira lead: gestão de hotspot com MikroTik, landing page personalizada e verificação por código no WhatsApp. Todas as mensagens saem pelo Chatwoot (caixa WhatsApp Cloud da Meta).
 
 ## Como funciona
 

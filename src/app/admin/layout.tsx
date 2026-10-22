@@ -24,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex min-h-full bg-slate-50">
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-slate-950 p-4 text-slate-300 md:flex">
         <div className="mb-8 flex items-center gap-2 px-2 text-lg font-bold text-white">
-          <span className="grid size-9 place-items-center rounded-xl bg-violet-600">📶</span> Voltec Hotspot
+          <span className="grid size-9 place-items-center rounded-xl bg-violet-600">📶</span> WiLead
         </div>
         <nav className="flex flex-1 flex-col gap-1">
           {NAV.map((item) => (

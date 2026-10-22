@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <form action={login} className="flex w-full max-w-sm flex-col gap-3 rounded-3xl bg-white p-8 shadow-2xl">
         <div className="mb-2 text-center">
           <div className="mx-auto mb-3 grid size-12 place-items-center rounded-2xl bg-violet-600 text-2xl">📶</div>
-          <h1 className="text-xl font-bold">Voltec Hotspot</h1>
+          <h1 className="text-xl font-bold">WiLead</h1>
           <p className="text-sm text-slate-500">Acesse o painel de gestão</p>
         </div>
         <input name="email" type="email" required placeholder="E-mail" className="rounded-xl border border-slate-200 px-4 py-3" />
