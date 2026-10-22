@@ -41,8 +41,13 @@ export async function saveRouter(id: string | null, form: FormData) {
   };
   const password = str(form, "password");
   if (id) await db.router.update({ where: { id }, data: { ...data, ...(password && { password }) } });
-  else await db.router.create({ data: { ...data, password } });
+  else {
+    const router = await db.router.create({ data: { ...data, password } });
+    // First router: locations that showed up before it was registered start using it.
+    if ((await db.router.count()) === 1) await db.location.updateMany({ where: { routerId: null }, data: { routerId: router.id } });
+  }
   revalidatePath("/admin/roteadores");
+  revalidatePath("/admin/locais");
 }
 
 export async function deleteRouter(id: string) {

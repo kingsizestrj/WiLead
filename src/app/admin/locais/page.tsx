@@ -22,6 +22,7 @@ export default async function LocationsPage() {
             <form action={updateLocation.bind(null, l.id)} className="grid items-end gap-3 md:grid-cols-6">
               <label className="flex flex-col gap-1 text-xs font-medium text-slate-500 md:col-span-2">
                 Nome <span className="font-mono text-[10px] text-slate-400">servidor: {l.hotspotServer} · {l._count.accesses} acessos</span>
+                {!l.routerId && <span className="text-xs font-semibold text-red-600">⚠ Sem roteador: os clientes deste local não conseguem conectar</span>}
                 <input name="name" defaultValue={l.name} required className={inputClass} />
               </label>
               <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
