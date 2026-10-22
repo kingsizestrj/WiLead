@@ -1,6 +1,6 @@
 import { AlertTriangle, ArrowLeft, CheckCircle2, Info, ListChecks, MapPinPlus, Radio } from "lucide-react";
 import Link from "next/link";
-import { Badge, Card, PageHeader, Table, td } from "@/components/admin/ui";
+import { Badge, Card, PageHeader, Table, Td, tr } from "@/components/admin/ui";
 import { db } from "@/lib/db";
 import { hotspotStatus, routerChecklist, srcNatAddresses, trunkCandidates, wileadUrls, type CheckItem, type HotspotStatus, type RouterInterface } from "@/lib/mikrotik-setup";
 import { NewPointForm, PrepareForm } from "./forms";
@@ -91,25 +91,25 @@ export default async function RouterPage({ params }: { params: Promise<{ id: str
               {hotspots.map((h) => {
                 const location = sources.find((s) => s.hotspotServer === h.name)?.location;
                 return (
-                  <tr key={h.name}>
-                    <td className={`${td} font-semibold`}>{h.name}</td>
-                    <td className={`${td} font-mono text-xs`}>{h.interface}</td>
-                    <td className={td}>{h.profile}</td>
-                    <td className={td}>
+                  <tr key={h.name} className={tr}>
+                    <Td className="font-semibold max-md:text-base">{h.name}</Td>
+                    <Td label="Interface" className="font-mono text-xs">{h.interface}</Td>
+                    <Td label="Perfil">{h.profile}</Td>
+                    <Td label="Status">
                       {h.disabled ? <Badge tone="zinc">Desativado</Badge> : h.invalid ? <Badge tone="rose">Inválido</Badge> : <Badge tone="green">Ativo</Badge>}
-                    </td>
-                    <td className={td}>{h.hosts}</td>
-                    <td className={td}>{h.active}</td>
-                    <td className={td}>
+                    </Td>
+                    <Td label="Aparelhos">{h.hosts}</Td>
+                    <Td label="Conectados">{h.active}</Td>
+                    <Td label="IPs do DHCP">
                       {h.leases === null ? <span className="text-ink-400">sem DHCP</span> : h.leases === 0 ? <Badge tone="amber">0 · VLAN não chega?</Badge> : h.leases}
-                    </td>
-                    <td className={td}>{location ? location.name : <span className="text-ink-400">aparece no 1º acesso</span>}</td>
+                    </Td>
+                    <Td label="Local no WiLead">{location ? location.name : <span className="text-ink-400">aparece no 1º acesso</span>}</Td>
                   </tr>
                 );
               })}
               {!hotspots.length && (
-                <tr>
-                  <td className={`${td} text-ink-400`} colSpan={8}>Nenhum hotspot neste roteador. Crie o primeiro ponto acima.</td>
+                <tr className={tr}>
+                  <Td colSpan={8} className="text-ink-400">Nenhum hotspot neste roteador. Crie o primeiro ponto acima.</Td>
                 </tr>
               )}
             </Table>

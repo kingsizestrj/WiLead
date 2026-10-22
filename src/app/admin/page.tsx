@@ -74,7 +74,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       />
       <FilterBar filters={filters} locations={locations} />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <Stat label="Acessos liberados" value={total.toLocaleString("pt-BR")} icon={<Wifi className="h-4 w-4" />} accent="bg-violet-500" />
         <Stat label="Novos clientes" value={newClients.toLocaleString("pt-BR")} hint={`${optIns} aceitaram receber promoções`} icon={<UserPlus className="h-4 w-4" />} accent="bg-fuchsia-500" />
         <Stat label="Aparelhos únicos" value={devices.toLocaleString("pt-BR")} icon={<Smartphone className="h-4 w-4" />} accent="bg-orange-500" />
@@ -95,8 +95,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <ol className="flex flex-col gap-4">
             {perLocation.map((row, i) => (
               <li key={row.locationId} className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="truncate">
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="min-w-0 truncate">
                     <span className="mr-2 font-bold text-ink-400">{i + 1}</span>
                     {locationName.get(row.locationId)}
                   </span>

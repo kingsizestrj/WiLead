@@ -15,14 +15,14 @@ export function FilterBar({
   type?: boolean;
 }) {
   return (
-    <form className="glass mb-6 flex animate-fade-up flex-wrap items-end gap-3 rounded-2xl p-4">
+    <form className="glass mb-6 grid animate-fade-up grid-cols-2 items-end gap-3 rounded-2xl p-4 sm:flex sm:flex-wrap">
       {search && (
-        <label className={`${fieldClass} min-w-56 flex-1`}>
+        <label className={`${fieldClass} col-span-2 sm:min-w-56 sm:flex-1`}>
           Buscar
           <input name="q" defaultValue={filters.q} placeholder="Nome, telefone ou e-mail" className={inputClass} />
         </label>
       )}
-      <label className={fieldClass}>
+      <label className={`${fieldClass} col-span-2 sm:col-span-1`}>
         Local
         <select name="location" defaultValue={filters.location ?? ""} className={inputClass}>
           <option value="">Todos os locais</option>
@@ -47,7 +47,7 @@ export function FilterBar({
         Até
         <input type="date" name="to" defaultValue={isoDate(filters.to)} className={inputClass} />
       </label>
-      <button className={buttonClass}>
+      <button className={`${buttonClass} col-span-2 sm:col-span-1`}>
         <Filter className="h-4 w-4" /> Filtrar
       </button>
     </form>

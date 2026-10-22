@@ -27,7 +27,7 @@ export function PageHeader({ title, subtitle, actions }: { title: ReactNode; sub
   return (
     <div className="mb-8 flex animate-fade-up flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h1>
         {subtitle && <p className="mt-1.5 max-w-3xl text-sm text-ink-300">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -37,7 +37,7 @@ export function PageHeader({ title, subtitle, actions }: { title: ReactNode; sub
 
 export function Card({ title, icon, children, className = "" }: { title?: string; icon?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`glass animate-fade-up rounded-2xl p-5 ${className}`}>
+    <section className={`glass min-w-0 animate-fade-up rounded-2xl p-4 sm:p-5 ${className}`}>
       {title && (
         <h2 className="mb-4 flex items-center gap-2 font-bold">
           {icon && <span className="text-fuchsia-300">{icon}</span>}
@@ -51,13 +51,13 @@ export function Card({ title, icon, children, className = "" }: { title?: string
 
 export function Stat({ label, value, hint, icon, accent = "bg-fuchsia-500" }: { label: string; value: ReactNode; hint?: string; icon?: ReactNode; accent?: string }) {
   return (
-    <div className="glass relative animate-fade-up overflow-hidden rounded-2xl p-5">
+    <div className="glass relative min-w-0 animate-fade-up overflow-hidden rounded-2xl p-4 sm:p-5">
       <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-40 blur-2xl ${accent}`} />
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-ink-300">{label}</span>
-        <span className="text-ink-300">{icon}</span>
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-300 sm:text-xs">{label}</span>
+        <span className="shrink-0 text-ink-300">{icon}</span>
       </div>
-      <div className="mt-3 text-3xl font-extrabold tracking-tight">{value}</div>
+      <div className="mt-2 text-2xl font-extrabold tracking-tight sm:mt-3 sm:text-3xl">{value}</div>
       {hint && <div className="mt-1 text-xs text-ink-400">{hint}</div>}
     </div>
   );
@@ -90,17 +90,30 @@ export function Empty({ icon, title, text }: { icon: ReactNode; title: string; t
   );
 }
 
+// On phones each row becomes a card: header hidden, every cell shows its column label.
 export function Table({ head, children }: { head: string[]; children: ReactNode }) {
   return (
-    <div className="glass animate-fade-up overflow-x-auto rounded-2xl">
-      <table className="w-full text-left text-sm">
-        <thead className="border-b border-white/5 text-[11px] uppercase tracking-wider text-ink-300">
+    <div className="glass animate-fade-up rounded-2xl md:overflow-x-auto">
+      <table className="w-full text-left text-sm max-md:block">
+        <thead className="border-b border-white/5 text-[11px] uppercase tracking-wider text-ink-300 max-md:hidden">
           <tr>{head.map((h) => <th key={h} className="whitespace-nowrap px-4 py-3 font-semibold">{h}</th>)}</tr>
         </thead>
-        <tbody className="divide-y divide-white/5">{children}</tbody>
+        <tbody className="divide-y divide-white/5 max-md:block">{children}</tbody>
       </table>
     </div>
   );
 }
 
-export const td = "whitespace-nowrap px-4 py-3";
+export const tr = "max-md:block max-md:px-4 max-md:py-3";
+
+export function Td({ label, className = "", colSpan, children }: { label?: string; className?: string; colSpan?: number; children: ReactNode }) {
+  return (
+    <td
+      colSpan={colSpan}
+      data-label={label}
+      className={`px-4 py-3 md:whitespace-nowrap max-md:flex max-md:items-center max-md:justify-between max-md:gap-4 max-md:px-0 max-md:py-1 max-md:text-right max-md:before:shrink-0 max-md:before:text-left max-md:before:text-xs max-md:before:font-semibold max-md:before:font-sans max-md:before:text-ink-400 max-md:before:content-[attr(data-label)] ${className}`}
+    >
+      {children}
+    </td>
+  );
+}

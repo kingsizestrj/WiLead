@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FilterBar } from "@/components/admin/FilterBar";
-import { PageHeader, Table, ghostButtonClass, td } from "@/components/admin/ui";
+import { Badge, PageHeader, Table, Td, ghostButtonClass, tr } from "@/components/admin/ui";
 import { db } from "@/lib/db";
 import { parseFilters } from "@/lib/filters";
 import { formatPhone } from "@/lib/phone";
@@ -50,21 +50,24 @@ export default async function AccessesPage({ searchParams }: { searchParams: Pro
       )}
       <Table head={["Data", "Local", "Cliente", "WhatsApp", "Tipo", "MAC", "IP", "Tempo liberado"]}>
         {accesses.map((a) => (
-          <tr key={a.id}>
-            <td className={td}>{a.createdAt.toLocaleString("pt-BR")}</td>
-            <td className={td}>{a.location.name}</td>
-            <td className={`${td} font-medium`}>{a.client.name}</td>
-            <td className={td}>{formatPhone(a.client.phone)}</td>
-            <td className={td}>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${a.type === "NEW" ? "bg-emerald-500/15 text-emerald-300" : "bg-sky-500/15 text-sky-300"}`}>
-                {a.type === "NEW" ? "Novo" : "Recorrente"}
-              </span>
-            </td>
-            <td className={`${td} font-mono text-xs`}>{a.device.mac}</td>
-            <td className={`${td} font-mono text-xs`}>{a.ip}</td>
-            <td className={td}>{a.grantedMinutes} min</td>
+          <tr key={a.id} className={tr}>
+            <Td label="Data">{a.createdAt.toLocaleString("pt-BR")}</Td>
+            <Td label="Local">{a.location.name}</Td>
+            <Td label="Cliente" className="font-semibold">{a.client.name}</Td>
+            <Td label="WhatsApp">{formatPhone(a.client.phone)}</Td>
+            <Td label="Tipo">
+              <Badge tone={a.type === "NEW" ? "green" : "sky"}>{a.type === "NEW" ? "Novo" : "Recorrente"}</Badge>
+            </Td>
+            <Td label="MAC" className="font-mono text-xs">{a.device.mac}</Td>
+            <Td label="IP" className="font-mono text-xs">{a.ip}</Td>
+            <Td label="Tempo liberado">{a.grantedMinutes} min</Td>
           </tr>
         ))}
+        {!accesses.length && (
+          <tr className={tr}>
+            <Td colSpan={8} className="text-ink-400">Nenhuma liberação no período.</Td>
+          </tr>
+        )}
       </Table>
       <div className="mt-4 flex justify-end gap-2">
         {page > 1 && <Link className={ghostButtonClass} href={`?${query}&page=${page - 1}`}>Anterior</Link>}

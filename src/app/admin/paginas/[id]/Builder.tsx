@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle } from "lucide-react";
+import { ArrowLeft, Eye, MessageCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { BlocksRenderer } from "@/components/BlocksRenderer";
@@ -91,6 +91,7 @@ export function Builder({ id, initial }: { id: string; initial: PortalInput }) {
   const [data, setData] = useState(initial);
   const [saved, setSaved] = useState(true);
   const [pending, start] = useTransition();
+  const [showPreview, setShowPreview] = useState(false);
 
   const update = (patch: Partial<PortalInput>) => {
     setData((d) => ({ ...d, ...patch }));
@@ -106,18 +107,33 @@ export function Builder({ id, initial }: { id: string; initial: PortalInput }) {
     update({ blocks });
   };
 
+  const preview = (
+    <PortalShell theme={data.theme} title={data.welcomeTitle}>
+      <div className="flex flex-col gap-3 rounded-[2rem] border border-snow/15 bg-black/25 p-6 backdrop-blur-2xl">
+        <p className="text-center text-sm opacity-90">Cadastre-se e receba o código de acesso no seu WhatsApp.</p>
+        <div className="rounded-2xl border border-snow/20 bg-snow/10 px-4 py-3.5 opacity-60">Seu nome</div>
+        <div className="rounded-2xl border border-snow/20 bg-snow/10 px-4 py-3.5 opacity-60">WhatsApp</div>
+        <div className="flex items-center justify-center gap-2 rounded-2xl bg-[var(--primary)] px-4 py-4 text-base font-bold text-snow shadow-[0_14px_40px_-12px_var(--primary)]"><MessageCircle className="h-5 w-5" /> Receber código no WhatsApp</div>
+      </div>
+      <BlocksRenderer blocks={data.blocks} />
+    </PortalShell>
+  );
+
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_400px]">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Link href="/admin/paginas" className="text-sm text-ink-300 hover:underline">← Voltar</Link>
-            <input className="rounded-lg bg-transparent px-2 py-1 text-2xl font-bold outline-none hover:bg-white/5 focus:bg-white/5"
-              value={data.name} onChange={(e) => update({ name: e.target.value })} />
-          </div>
-          <button className={buttonClass} disabled={pending}
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="flex min-w-0 flex-col gap-4">
+        <div className="glass sticky top-[4.5rem] z-30 flex items-center gap-2 rounded-2xl p-2 lg:top-4">
+          <Link href="/admin/paginas" className="shrink-0 rounded-lg p-2 text-ink-300 hover:bg-white/5 hover:text-white" aria-label="Voltar">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <input className="min-w-0 flex-1 rounded-lg bg-transparent px-2 py-1 text-lg font-bold outline-none hover:bg-white/5 focus:bg-white/5 sm:text-2xl"
+            value={data.name} onChange={(e) => update({ name: e.target.value })} />
+          <button type="button" className={`${ghostButtonClass} !px-3 xl:hidden`} onClick={() => setShowPreview(true)}>
+            <Eye className="h-4 w-4" /> <span className="max-sm:hidden">Prévia</span>
+          </button>
+          <button className={`${buttonClass} !px-3 sm:!px-4`} disabled={pending}
             onClick={() => start(async () => { await savePortal(id, data); setSaved(true); })}>
-            {pending ? "Salvando..." : saved ? "Salvo ✓" : "Salvar alterações"}
+            {pending ? "Salvando..." : saved ? "Salvo ✓" : "Salvar"}
           </button>
         </div>
 
@@ -215,22 +231,29 @@ export function Builder({ id, initial }: { id: string; initial: PortalInput }) {
         </Card>
       </div>
 
-      <div className="xl:sticky xl:top-8 xl:self-start">
+      <div className="hidden xl:sticky xl:top-8 xl:block xl:self-start">
         <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-ink-400">Pré-visualização</p>
-        <div className="mx-auto h-[780px] w-[380px] overflow-hidden rounded-[3rem] border-[10px] border-black shadow-2xl ring-1 ring-white/10">
-          <div className="h-full overflow-y-auto">
-            <PortalShell theme={data.theme} title={data.welcomeTitle}>
-              <div className="flex flex-col gap-3 rounded-[2rem] border border-snow/15 bg-black/25 p-6 backdrop-blur-2xl">
-                <p className="text-center text-sm opacity-90">Cadastre-se e receba o código de acesso no seu WhatsApp.</p>
-                <div className="rounded-2xl border border-snow/20 bg-snow/10 px-4 py-3.5 opacity-60">Seu nome</div>
-                <div className="rounded-2xl border border-snow/20 bg-snow/10 px-4 py-3.5 opacity-60">WhatsApp</div>
-                <div className="flex items-center justify-center gap-2 rounded-2xl bg-[var(--primary)] px-4 py-4 text-base font-bold text-snow shadow-[0_14px_40px_-12px_var(--primary)]"><MessageCircle className="h-5 w-5" /> Receber código no WhatsApp</div>
-              </div>
-              <BlocksRenderer blocks={data.blocks} />
-            </PortalShell>
+        <PhoneFrame>{preview}</PhoneFrame>
+      </div>
+
+      {showPreview && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center gap-3 bg-black/80 p-4 backdrop-blur-sm xl:hidden" onClick={() => setShowPreview(false)}>
+          <button className={`${ghostButtonClass} self-end`} onClick={() => setShowPreview(false)}>
+            <X className="h-4 w-4" /> Fechar prévia
+          </button>
+          <div className="w-full max-w-[380px]" onClick={(e) => e.stopPropagation()}>
+            <PhoneFrame>{preview}</PhoneFrame>
           </div>
         </div>
-      </div>
+      )}
+    </div>
+  );
+}
+
+function PhoneFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mx-auto h-[min(780px,calc(100dvh-7rem))] w-full max-w-[380px] overflow-hidden rounded-[3rem] border-[10px] border-black shadow-2xl ring-1 ring-white/10">
+      <div className="h-full overflow-y-auto">{children}</div>
     </div>
   );
 }

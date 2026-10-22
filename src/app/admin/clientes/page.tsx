@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FilterBar } from "@/components/admin/FilterBar";
-import { PageHeader, Table, ghostButtonClass, td } from "@/components/admin/ui";
+import { PageHeader, Table, Td, ghostButtonClass, tr } from "@/components/admin/ui";
 import { clientsInclude, clientsWhere } from "@/lib/clients-query";
 import { db } from "@/lib/db";
 import { parseFilters } from "@/lib/filters";
@@ -30,21 +30,26 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
       <FilterBar filters={filters} locations={locations} search />
       <Table head={["Nome", "WhatsApp", "E-mail", "Promoções", "Primeiro local", "Último acesso", "Acessos", "Aparelhos"]}>
         {clients.map((c) => (
-          <tr key={c.id}>
-            <td className={`${td} font-medium`}>{c.name}</td>
-            <td className={td}>
+          <tr key={c.id} className={tr}>
+            <Td className="font-semibold max-md:text-base">{c.name}</Td>
+            <Td label="WhatsApp">
               <a className="text-fuchsia-300 hover:underline" href={`https://wa.me/${c.phone}`} target="_blank" rel="noreferrer">{formatPhone(c.phone)}</a>
-            </td>
-            <td className={td}>{c.email ?? "—"}</td>
-            <td className={td}>{c.marketingOptIn ? "✅" : "—"}</td>
-            <td className={td}>{c.firstLocation?.name ?? "—"}</td>
-            <td className={td}>
+            </Td>
+            <Td label="E-mail">{c.email ?? "—"}</Td>
+            <Td label="Promoções">{c.marketingOptIn ? "✅" : "—"}</Td>
+            <Td label="Primeiro local">{c.firstLocation?.name ?? "—"}</Td>
+            <Td label="Último acesso">
               {c.accesses[0] ? `${c.accesses[0].location.name} · ${c.accesses[0].createdAt.toLocaleString("pt-BR")}` : "—"}
-            </td>
-            <td className={td}>{c._count.accesses}</td>
-            <td className={td}>{c._count.devices}</td>
+            </Td>
+            <Td label="Acessos">{c._count.accesses}</Td>
+            <Td label="Aparelhos">{c._count.devices}</Td>
           </tr>
         ))}
+        {!clients.length && (
+          <tr className={tr}>
+            <Td colSpan={8} className="text-ink-400">Nenhum cliente acessou no período.</Td>
+          </tr>
+        )}
       </Table>
       <div className="mt-4 flex justify-end gap-2">
         {page > 1 && <Link className={ghostButtonClass} href={`?${query}&page=${page - 1}`}>Anterior</Link>}
