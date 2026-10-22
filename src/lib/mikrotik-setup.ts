@@ -221,6 +221,14 @@ export async function createPoint(
     }
     const used = ((await api.write("/ip/address/print")) as Row[]).find((a) => overlaps(a.address, net));
     if (used) throw new Error(`A rede ${net}.0/24 conflita com ${used.address} em ${used.interface}`);
+    // Routes learned from OSPF/BGP or static ones also count (the default route does not).
+    const route = ((await api.write("/ip/route/print")) as Row[]).find(
+      (r) => r["dst-address"] !== "0.0.0.0/0" && r.active === "true" && overlaps(r["dst-address"], net),
+    );
+    if (route) {
+      const origin = route.ospf === "true" ? "OSPF" : route.bgp === "true" ? "BGP" : route.static === "true" ? "rota estática" : "rota";
+      throw new Error(`A rede ${net}.0/24 conflita com a ${origin} ${route["dst-address"]} (via ${route.gateway ?? "?"}). Escolha outra faixa.`);
+    }
 
     const created: [string, string][] = [];
     const add = async (label: string, path: string, args: string[]) => {
