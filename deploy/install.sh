@@ -27,6 +27,14 @@ else
 fi
 cd "$DIR"
 
+# Variáveis novas de versões mais recentes entram no .env existente com o valor de exemplo
+if [ -f .env ]; then
+  grep -E '^[A-Z_]+=' .env.example | while IFS= read -r line; do
+    key="${line%%=*}"
+    grep -q "^${key}=" .env || { echo "$line" >> .env; echo "==> .env: adicionada a variável ${key}"; }
+  done
+fi
+
 if [ ! -f .env ]; then
   cp .env.example .env
   ADMIN_PASSWORD="$(openssl rand -base64 18 | tr -dc 'A-Za-z0-9' | head -c 16)"

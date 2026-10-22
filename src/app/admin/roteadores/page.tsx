@@ -1,4 +1,7 @@
 import type { Router } from "@prisma/client";
+import { Settings2 } from "lucide-react";
+import Link from "next/link";
+import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { TestRouterButton } from "@/components/admin/TestRouterButton";
 import { Card, PageHeader, buttonClass, ghostButtonClass, inputClass } from "@/components/admin/ui";
 import { db } from "@/lib/db";
@@ -56,9 +59,16 @@ export default async function RoutersPage() {
           <Card key={r.id} title={`${r.name} · ${r._count.locations} locais`}>
             <RouterForm router={r} />
             <div className="mt-4 flex items-center justify-between border-t border-white/5 pt-4">
-              <TestRouterButton id={r.id} />
+              <div className="flex flex-wrap items-center gap-3">
+                <Link href={`/admin/roteadores/${r.id}`} className={buttonClass}>
+                  <Settings2 className="h-4 w-4" /> Gerenciar hotspot e pontos
+                </Link>
+                <TestRouterButton id={r.id} />
+              </div>
               <form action={deleteRouter.bind(null, r.id)}>
-                <button className={`${ghostButtonClass} text-rose-300`}>Remover</button>
+                <ConfirmButton message={`Remover o roteador ${r.name} do WiLead? Nada é apagado no MikroTik.`} className={`${ghostButtonClass} text-rose-300`}>
+                  Remover
+                </ConfirmButton>
               </form>
             </div>
           </Card>

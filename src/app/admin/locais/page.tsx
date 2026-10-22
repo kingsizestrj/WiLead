@@ -1,7 +1,7 @@
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { Card, PageHeader, buttonClass, ghostButtonClass, inputClass } from "@/components/admin/ui";
 import { db } from "@/lib/db";
-import { createLocation, deleteLocation, moveLocationSource, updateLocation } from "../actions";
+import { createLocation, deleteLocation, moveLocationSource, removePointAction, updateLocation } from "../actions";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -103,6 +103,16 @@ export default async function LocationsPage() {
               {!l.sources.length && <p className="text-xs text-ink-400">Nenhuma origem. Mova para cá uma origem de outro local.</p>}
             </div>
 
+            {l.mikrotikSlug && l.routerId && (
+              <form action={removePointAction.bind(null, l.id)} className="mt-3">
+                <ConfirmButton
+                  message={`Remover do MikroTik o hotspot, o DHCP, a rede e a VLAN do ponto ${l.name}? O histórico continua no WiLead.`}
+                  className={`${ghostButtonClass} !px-2 !py-1 text-xs text-rose-300`}
+                >
+                  Remover ponto do MikroTik
+                </ConfirmButton>
+              </form>
+            )}
             {!l.sources.length && !l._count.accesses && (
               <form action={deleteLocation.bind(null, l.id)} className="mt-3">
                 <ConfirmButton message={`Excluir o local ${l.name}?`} className={`${ghostButtonClass} !px-2 !py-1 text-xs text-rose-300`}>

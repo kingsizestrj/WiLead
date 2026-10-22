@@ -5,10 +5,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { DEFAULT_THEME, newBlock, type Block, type Theme } from "@/lib/blocks";
-import { locationLabel, renameLabel } from "@/lib/chatwoot";
+import { locationLabel, renameLabel, slugLabel } from "@/lib/chatwoot";
 import { db } from "@/lib/db";
 import { createTemplate, deleteTemplate, type NewTemplate } from "@/lib/meta-templates";
 import { testRouter } from "@/lib/mikrotik";
+import { createPoint, prepareRouter, removePoint } from "@/lib/mikrotik-setup";
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const optional = (f: FormData, k: string) => str(f, k) || null;
@@ -222,4 +223,65 @@ export async function deleteWhatsappTemplate(name: string) {
   await requireAdmin();
   await deleteTemplate(name);
   revalidatePath("/admin/templates");
+}
+
+type ActionResult = { log?: string[]; ok?: string; error?: string } | null;
+
+export async function prepareRouterAction(routerId: string, _prev: ActionResult, form: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const router = await db.router.findUniqueOrThrow({ where: { id: routerId } });
+  try {
+    const log = await prepareRouter(router, { masquerade: form.get("masquerade") === "on", enableDns: form.get("enableDns") === "on" });
+    revalidatePath(`/admin/roteadores/${routerId}`);
+    return { log };
+  } catch (error) {
+    return { error: (error as Error).message };
+  }
+}
+
+// Accepts "10.5.1", "10.5.1.0" or "10.5.1.0/24" and returns the first three octets.
+function parseNetwork(value: string) {
+  const octets = value.replace(/\/24$/, "").split(".").filter((o, i) => i < 3 || o !== "0");
+  const valid = octets.length === 3 && octets.every((o) => /^\d{1,3}$/.test(o) && Number(o) <= 255);
+  return valid ? octets.join(".") : null;
+}
+
+export async function createPointAction(routerId: string, _prev: ActionResult, form: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const name = str(form, "name");
+  const slug = slugLabel(name).slice(0, 20).replace(/-$/, "");
+  const vlanId = Number(str(form, "vlanId"));
+  const network = parseNetwork(str(form, "network"));
+  const leaseMinutes = Number(str(form, "leaseMinutes"));
+  if (!slug) return { error: "Dê um nome ao ponto." };
+  if (!Number.isInteger(vlanId) || vlanId < 2 || vlanId > 4094) return { error: "A VLAN precisa ser um número de 2 a 4094." };
+  if (!network) return { error: "Informe a rede /24 do ponto, por exemplo 10.5.1.0/24." };
+  if (!Number.isInteger(leaseMinutes) || leaseMinutes < 5) return { error: "O tempo de DHCP precisa ser de pelo menos 5 minutos." };
+
+  const router = await db.router.findUniqueOrThrow({ where: { id: routerId } });
+  try {
+    const point = await createPoint(router, { slug, trunk: str(form, "trunk"), vlanId, network, leaseMinutes });
+    const location = await db.location.create({ data: { name, city: optional(form, "city"), routerId, mikrotikSlug: slug } });
+    const source = { hotspotServer: point.hotspotServer, interfaceName: point.interfaceName };
+    await db.locationSource.upsert({
+      where: { hotspotServer_interfaceName: source },
+      update: { locationId: location.id },
+      create: { ...source, locationId: location.id },
+    });
+    revalidatePath(`/admin/roteadores/${routerId}`);
+    revalidatePath("/admin/locais");
+    return { ok: `Ponto "${name}" criado: ${point.hotspotServer} na ${point.interfaceName}, rede ${network}.0/24. ${point.loginHtml}.` };
+  } catch (error) {
+    return { error: (error as Error).message };
+  }
+}
+
+export async function removePointAction(locationId: string) {
+  await requireAdmin();
+  const location = await db.location.findUniqueOrThrow({ where: { id: locationId }, include: { router: true } });
+  if (!location.router || !location.mikrotikSlug) throw new Error("Este local não foi criado pelo painel no MikroTik.");
+  await removePoint(location.router, location.mikrotikSlug);
+  await db.location.update({ where: { id: locationId }, data: { mikrotikSlug: null } });
+  revalidatePath("/admin/locais");
+  revalidatePath(`/admin/roteadores/${location.router.id}`);
 }

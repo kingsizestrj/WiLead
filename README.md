@@ -67,34 +67,25 @@ Com `CHATWOOT_DRY_RUN=true` e `HOTSPOT_DRY_RUN=true`, o código aparece no log e
 
 ## Configurando o MikroTik (RouterOS v6 ou v7)
 
-O sistema usa a API do RouterOS (serviço `api`, porta 8728, ou `api-ssl`, porta 8729), que funciona tanto no v6 quanto no v7.
+O painel configura o MikroTik pela API do RouterOS (serviço `api` 8728 ou `api-ssl` 8729). Só o acesso é manual:
 
-1. Siga `mikrotik/setup.rsc`: liberar o serviço `api`/`api-ssl` só para o IP do servidor, criar um usuário só para a API, usar `login-by=http-pap` e configurar o walled garden (portal + WhatsApp).
-2. Envie `mikrotik/login.html` (já aponta para `https://wilead.voltecautomacao.com.br`) para a pasta `hotspot/` de cada servidor hotspot.
-3. No painel, vá em **MikroTik → Novo roteador** (IP, porta, usuário da API e perfil de usuário do hotspot) e clique em **Testar conexão**.
-4. Depois do primeiro acesso de cada hotspot, vá em **Locais**, dê um nome e vincule o roteador.
+1. No roteador, rode `mikrotik/setup.rsc`, trocando o IP do WiLead e a senha. Ele libera a API só para o servidor do WiLead e cria o usuário `wilead-api`.
+2. No painel, em **MikroTik → Novo roteador**, cadastre IP, porta e o usuário `wilead-api`, e clique em **Testar conexão**.
+3. Clique em **Gerenciar hotspot e pontos**:
+   - **Preparar roteador** cria o perfil de hotspot `wilead` (login por http-pap e cookie) e instala o `login.html`: o roteador baixa de `PUBLIC_URL/mikrotik/login.html` com `/tool fetch`. Também cria o walled garden do portal, a lista de IPs da Meta com a regra do WhatsApp temporário, e remove a regra antiga que liberava o WhatsApp para todos. Opcionalmente, liga o DNS para os clientes e cria o NAT (masquerade) das redes dos pontos. A lista de verificação mostra o que já está certo.
+   - **Novo ponto**: nome, cidade, porta tronco, VLAN e rede /24. O painel cria VLAN, IP, pool, servidor hotspot, DHCP e a rede na lista `redes-hotspot`, e o local já aparece no WiLead com o nome escolhido. O DHCP só é ligado depois do hotspot, e se algo falhar tudo o que foi criado é desfeito.
+   - A tabela **Hotspots neste roteador** mostra, por servidor, aparelhos, conectados e IPs entregues pelo DHCP. Zero IPs com o Wi-Fi em uso indica que a VLAN do ponto não está chegando.
+4. Para remover um ponto do MikroTik, use **Locais → Remover ponto do MikroTik**. O histórico continua no WiLead.
 
-Dicas:
-- Prefira `api-ssl` (8729) com certificado. Se usar `api` (8728), mantenha o acesso restrito ao IP do servidor ou a uma VPN.
-- No perfil de usuário do hotspot dá para limitar a banda (`rate-limit=5M/10M`) e os aparelhos por usuário (`shared-users=1`).
+O AP do ponto precisa entregar o Wi-Fi na VLAN do ponto: UniFi e Intelbras corporativo marcam a VLAN no SSID; para APs sem VLAN, como Greatek, use uma porta *access* de switch ou rádio. Todos os switches e rádios até a porta tronco do CCR precisam passar a VLAN marcada (tagged).
 
-### Um ponto por VLAN (saber de onde o cliente vem)
-
-O WiLead identifica o ponto pelo **servidor hotspot** e pela **interface** por onde o cliente chegou (`$(interface-name)`).
-Com todos os pontos na mesma VLAN, não dá para diferenciar. A solução é dar uma VLAN para cada ponto, mesmo que todos continuem chegando ao CCR pela mesma porta (tronco):
-
-1. No AP do ponto, marque o SSID do hotspot com a VLAN do ponto (UniFi e Intelbras corporativo fazem isso). Para APs sem VLAN, como Greatek, use uma porta *access* de um switch gerenciável ou de um rádio no ponto.
-2. No CCR, rode `mikrotik/vlan-ponto.rsc` uma vez por ponto, ajustando porta do tronco, VLAN, nome, rede /24 e **perfil de hotspot** (o nome que aparece em `/ip hotspot profile print`). Ele confere tudo antes de criar e só liga o DHCP depois que o hotspot está de pé. Para desfazer um ponto, inteiro ou criado pela metade, use `mikrotik/vlan-ponto-remover.rsc`.
-3. No primeiro acesso, o ponto aparece em **Locais** com o nome do servidor (ex.: `hs-praca-central`). Renomeie como quiser.
-
-Os pontos ainda não migrados continuam na VLAN atual e aparecem juntos como um único local até serem migrados.
-Não usamos uma bridge única com as VLANs porque, para o MikroTik informar a porta, seria preciso ativar `use-ip-firewall`, que vale para **todas** as bridges do roteador.
+Se o roteador não alcançar o `PUBLIC_URL` (NAT de retorno), defina `ROUTER_FETCH_URL` com o endereço interno do WiLead, por exemplo `http://10.128.31.78:3000`.
 
 ### WhatsApp no walled garden (só para quem pediu o código)
 
 O WhatsApp **não** fica liberado para todo mundo antes do login. Quando alguém pede o código, o WiLead coloca o IP do aparelho na lista `wilead-otp` do MikroTik por alguns minutos (padrão 3; ajuste ou desligue em **Configurações**).
 Só essa lista alcança os IPs da Meta (`wilead-meta`) antes do login, então o cliente sem 4G consegue ler o código. Quando o tempo acaba, o próprio MikroTik remove o IP da lista.
-A regra fica no bloco 4 do `mikrotik/setup.rsc`. Enquanto o IP está na lista, Instagram e Facebook também abrem, porque usam os mesmos IPs.
+A regra é criada pelo **Preparar roteador** no painel. Enquanto o IP está na lista, Instagram e Facebook também abrem, porque usam os mesmos IPs.
 
 ## Chatwoot: código no WhatsApp e campanhas
 

@@ -32,11 +32,12 @@ model Router {
   locations   Location[]
 }
 
-// A hotspot server on the MikroTik ($(server-name)). Used to know where clients come from.
 // A point where clients connect ("ponto"). It is fed by one or more sources.
 model Location {
   id             String           @id @default(cuid())
   name           String
+  // Set when the panel created the point on the MikroTik (hs-<slug>, vlan<id>-<slug>...)
+  mikrotikSlug   String?
   city           String?
   sessionMinutes Int?
   routerId       String?

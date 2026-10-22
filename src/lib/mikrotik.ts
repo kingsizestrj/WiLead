@@ -2,7 +2,7 @@ import type { Router } from "@prisma/client";
 import { RouterOSAPI } from "node-routeros";
 
 // RouterOS API (services "api" 8728 / "api-ssl" 8729) — works on RouterOS v6 and v7.
-async function withRouter<T>(router: Router, fn: (api: RouterOSAPI) => Promise<T>) {
+export async function withRouter<T>(router: Router, fn: (api: RouterOSAPI) => Promise<T>) {
   const api = new RouterOSAPI({
     host: router.host,
     port: router.port,
