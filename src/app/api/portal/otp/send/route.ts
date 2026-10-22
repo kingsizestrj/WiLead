@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db, getSettings } from "@/lib/db";
 import { normalizeMac, normalizePhone } from "@/lib/phone";
-import { sendOtpWhatsApp } from "@/lib/whatsapp";
+import { sendOtp } from "@/lib/chatwoot";
 
 const schema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   });
 
   try {
-    await sendOtpWhatsApp(phone, code);
+    await sendOtp(phone, parsed.data.name, code);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Não conseguimos enviar o código no WhatsApp. Confira o número." }, { status: 502 });

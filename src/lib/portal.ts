@@ -1,4 +1,6 @@
 import type { Client, Location, Router } from "@prisma/client";
+import { after } from "next/server";
+import { findOrCreateContact, slugLabel, syncContact } from "./chatwoot";
 import { db, getSettings } from "./db";
 import { upsertHotspotUser } from "./mikrotik";
 
@@ -25,6 +27,18 @@ export async function resolveLocation(server: string) {
 export async function resolvePortal(location: Location) {
   if (location.portalId) return db.portal.findUniqueOrThrow({ where: { id: location.portalId } });
   return db.portal.findFirstOrThrow({ where: { isDefault: true } });
+}
+
+async function syncToChatwoot(client: Client, location: Location) {
+  const contactId = client.chatwootContactId ?? (await findOrCreateContact(client.phone, client.name));
+  if (!client.chatwootContactId) await db.client.update({ where: { id: client.id }, data: { chatwootContactId: contactId } });
+  await syncContact({
+    contactId,
+    locationLabel: `wifi-${slugLabel(location.hotspotServer)}`,
+    locationName: location.name,
+    optIn: client.marketingOptIn,
+    visits: await db.access.count({ where: { clientId: client.id } }),
+  });
 }
 
 export async function grantAccess(opts: {
@@ -60,6 +74,9 @@ export async function grantAccess(opts: {
       grantedMinutes: minutes,
     },
   });
+
+  // Segmentation for campaigns runs after the response so it never delays the login.
+  after(() => syncToChatwoot(opts.client, opts.location).catch((error) => console.error("[chatwoot] sync", error)));
 
   return { ...credentials, minutes };
 }

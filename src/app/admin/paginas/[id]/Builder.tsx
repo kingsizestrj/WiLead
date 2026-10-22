@@ -32,6 +32,16 @@ const FIELDS: Record<BlockType, { key: string; label: string; kind: FieldKind }[
     { key: "handle", label: "@ do Instagram", kind: "text" },
     { key: "text", label: "Chamada", kind: "text" },
   ],
+  plans: [
+    { key: "title", label: "Título", kind: "text" },
+    { key: "items", label: "Um por linha: Nome | Preço | Detalhes", kind: "textarea" },
+    { key: "footnote", label: "Observações", kind: "textarea" },
+  ],
+  whatsapp: [
+    { key: "phone", label: "Número do WhatsApp (com DDD)", kind: "text" },
+    { key: "label", label: "Texto do botão", kind: "text" },
+    { key: "message", label: "Mensagem que já vem escrita", kind: "textarea" },
+  ],
 };
 
 async function upload(file: File) {
@@ -180,7 +190,7 @@ export function Builder({ id, initial }: { id: string; initial: PortalInput }) {
                       <Field key={f.key} label={f.label}>
                         {f.kind === "text" && <input className={inputClass} value={value} onChange={(e) => onChange(e.target.value)} />}
                         {(f.kind === "textarea" || f.kind === "images") && (
-                          <textarea className={inputClass} rows={3} value={value} onChange={(e) => onChange(e.target.value)} />
+                          <textarea className={inputClass} rows={5} value={value} onChange={(e) => onChange(e.target.value)} />
                         )}
                         {f.kind === "image" && <MediaInput accept="image/*" value={value} onChange={onChange} />}
                         {f.kind === "video" && <MediaInput accept="video/mp4,video/webm" value={value} onChange={onChange} />}

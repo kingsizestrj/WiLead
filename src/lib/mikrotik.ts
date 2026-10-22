@@ -1,43 +1,39 @@
-import { Agent } from "undici";
 import type { Router } from "@prisma/client";
+import { RouterOSAPI } from "node-routeros";
 
-// Minimal client for the RouterOS v7 REST API (/rest/...).
-async function call(router: Router, method: string, path: string, body?: unknown) {
-  const url = `${router.apiUrl.replace(/\/$/, "")}/rest${path}`;
-  const res = await fetch(url, {
-    method,
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${router.username}:${router.password}`).toString("base64")}`,
-      "Content-Type": "application/json",
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    // @ts-expect-error undici dispatcher is supported by Node's fetch
-    dispatcher: router.insecureTls ? new Agent({ connect: { rejectUnauthorized: false } }) : undefined,
-    signal: AbortSignal.timeout(8000),
+// RouterOS API (services "api" 8728 / "api-ssl" 8729) — works on RouterOS v6 and v7.
+async function withRouter<T>(router: Router, fn: (api: RouterOSAPI) => Promise<T>) {
+  const api = new RouterOSAPI({
+    host: router.host,
+    port: router.port,
+    user: router.username,
+    password: router.password,
+    timeout: 8,
+    tls: router.useTls ? { rejectUnauthorized: !router.insecureTls } : undefined,
   });
-  const text = await res.text();
-  if (!res.ok) throw new Error(`MikroTik ${method} ${path} -> ${res.status}: ${text}`);
-  return text ? JSON.parse(text) : null;
+  await api.connect();
+  try {
+    return await fn(api);
+  } finally {
+    await api.close();
+  }
 }
 
 export async function testRouter(router: Router) {
-  const identity = await call(router, "GET", "/system/identity");
-  const resource = await call(router, "GET", "/system/resource");
-  return { identity: identity.name as string, version: resource.version as string, board: resource["board-name"] as string };
+  return withRouter(router, async (api) => {
+    const [identity] = await api.write("/system/identity/print");
+    const [resource] = await api.write("/system/resource/print");
+    return { identity: identity.name as string, version: resource.version as string, board: resource["board-name"] as string };
+  });
 }
 
 function uptimeLimit(minutes: number) {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${h}h${m}m`;
+  return `${Math.floor(minutes / 60)}h${minutes % 60}m`;
 }
 
 // Creates or refreshes a hotspot user locked to the device MAC with an uptime limit.
-// Returns credentials that the client's browser posts to $(link-login-only).
-export async function upsertHotspotUser(
-  router: Router | null,
-  opts: { mac: string; minutes: number; comment: string },
-) {
+// Returns credentials that the client's browser sends to $(link-login-only).
+export async function upsertHotspotUser(router: Router | null, opts: { mac: string; minutes: number; comment: string }) {
   const username = opts.mac;
   const password = crypto.randomUUID().slice(0, 12);
 
@@ -47,22 +43,23 @@ export async function upsertHotspotUser(
   }
   if (!router) throw new Error("Nenhum roteador vinculado a este local");
 
-  const data = {
-    password,
-    "mac-address": opts.mac,
-    "limit-uptime": uptimeLimit(opts.minutes),
-    profile: router.userProfile,
-    comment: opts.comment,
-  };
+  const data = [
+    `=password=${password}`,
+    `=mac-address=${opts.mac}`,
+    `=limit-uptime=${uptimeLimit(opts.minutes)}`,
+    `=profile=${router.userProfile}`,
+    `=comment=${opts.comment}`,
+  ];
 
-  const existing = (await call(router, "GET", `/ip/hotspot/user?name=${encodeURIComponent(username)}`)) as { ".id": string }[];
-  if (existing.length) {
-    const id = existing[0][".id"];
-    await call(router, "PATCH", `/ip/hotspot/user/${id}`, data);
-    await call(router, "POST", "/ip/hotspot/user/reset-counters", { ".id": id });
-  } else {
-    await call(router, "PUT", "/ip/hotspot/user", { name: username, ...data });
-  }
+  await withRouter(router, async (api) => {
+    const [existing] = await api.write("/ip/hotspot/user/print", [`?name=${username}`]);
+    if (existing) {
+      await api.write("/ip/hotspot/user/set", [`=.id=${existing[".id"]}`, ...data]);
+      await api.write("/ip/hotspot/user/reset-counters", [`=.id=${existing[".id"]}`]);
+    } else {
+      await api.write("/ip/hotspot/user/add", [`=name=${username}`, ...data]);
+    }
+  });
 
   return { username, password };
 }

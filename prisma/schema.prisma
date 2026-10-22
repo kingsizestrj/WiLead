@@ -18,10 +18,13 @@ model AdminUser {
 model Router {
   id          String     @id @default(cuid())
   name        String
-  // Base URL of the RouterOS v7 REST API, e.g. https://10.0.0.1 or http://10.0.0.1
-  apiUrl      String
+  // RouterOS API service: 8728 (api) or 8729 (api-ssl)
+  host        String
+  port        Int        @default(8728)
+  useTls      Boolean    @default(false)
   username    String
   password    String
+  // Accept the router's self-signed certificate on api-ssl
   insecureTls Boolean    @default(true)
   // Hotspot user profile applied to created users
   userProfile String     @default("default")
@@ -31,54 +34,55 @@ model Router {
 
 // A hotspot server on the MikroTik ($(server-name)). Used to know where clients come from.
 model Location {
-  id             String      @id @default(cuid())
-  hotspotServer  String      @unique
+  id             String        @id @default(cuid())
+  hotspotServer  String        @unique
   name           String
   city           String?
   sessionMinutes Int?
   routerId       String?
-  router         Router?     @relation(fields: [routerId], references: [id], onDelete: SetNull)
+  router         Router?       @relation(fields: [routerId], references: [id], onDelete: SetNull)
   portalId       String?
-  portal         Portal?     @relation(fields: [portalId], references: [id], onDelete: SetNull)
-  createdAt      DateTime    @default(now())
+  portal         Portal?       @relation(fields: [portalId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
   accesses       Access[]
   clients        Client[]
   events         PortalEvent[]
 }
 
 model Portal {
-  id             String        @id @default(cuid())
-  name           String
-  isDefault      Boolean       @default(false)
+  id           String        @id @default(cuid())
+  name         String
+  isDefault    Boolean       @default(false)
   // { primaryColor, backgroundColor, backgroundImage, logoUrl, textColor }
-  theme          Json
+  theme        Json
   // Ordered list of content blocks (see src/lib/blocks.ts)
-  blocks         Json
-  adVideoUrl     String?
-  adSeconds      Int           @default(0)
-  welcomeTitle   String        @default("Wi-Fi grátis")
-  instagram      String?
-  redirectUrl    String?
-  termsText      String        @default("Ao conectar você concorda com os termos de uso e com o recebimento de comunicações.")
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  locations      Location[]
-  events         PortalEvent[]
+  blocks       Json
+  adVideoUrl   String?
+  adSeconds    Int           @default(0)
+  welcomeTitle String        @default("Wi-Fi grátis")
+  instagram    String?
+  redirectUrl  String?
+  termsText    String        @default("Ao conectar você concorda com os termos de uso e com o recebimento de comunicações.")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  locations    Location[]
+  events       PortalEvent[]
 }
 
 model Client {
-  id              String    @id @default(cuid())
-  name            String
+  id                String    @id @default(cuid())
+  name              String
   // Digits only, with country code (e.g. 5511999999999)
-  phone           String    @unique
-  email           String?
-  marketingOptIn  Boolean   @default(false)
-  verifiedAt      DateTime
-  firstLocationId String?
-  firstLocation   Location? @relation(fields: [firstLocationId], references: [id], onDelete: SetNull)
-  createdAt       DateTime  @default(now())
-  devices         Device[]
-  accesses        Access[]
+  phone             String    @unique
+  email             String?
+  marketingOptIn    Boolean   @default(false)
+  verifiedAt        DateTime
+  chatwootContactId Int?
+  firstLocationId   String?
+  firstLocation     Location? @relation(fields: [firstLocationId], references: [id], onDelete: SetNull)
+  createdAt         DateTime  @default(now())
+  devices           Device[]
+  accesses          Access[]
 }
 
 model Device {
@@ -152,8 +156,8 @@ model PortalEvent {
 }
 
 model Setting {
-  id                Int    @id @default(1)
-  sessionMinutes    Int    @default(240)
-  otpTtlMinutes     Int    @default(10)
-  otpMaxPerHour     Int    @default(5)
+  id             Int @id @default(1)
+  sessionMinutes Int @default(240)
+  otpTtlMinutes  Int @default(10)
+  otpMaxPerHour  Int @default(5)
 }

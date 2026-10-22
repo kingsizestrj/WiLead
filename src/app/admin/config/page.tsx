@@ -1,10 +1,11 @@
 import { Card, PageHeader, buttonClass, inputClass } from "@/components/admin/ui";
+import { PROMO_LABEL } from "@/lib/chatwoot";
 import { getSettings } from "@/lib/db";
 import { saveSettings } from "../actions";
 
 export default async function SettingsPage() {
   const settings = await getSettings();
-  const whatsappReady = !!process.env.WHATSAPP_ACCESS_TOKEN && !!process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const chatwootReady = !!process.env.CHATWOOT_URL && !!process.env.CHATWOOT_API_TOKEN && !!process.env.CHATWOOT_INBOX_ID;
   return (
     <>
       <PageHeader title="Configurações" />
@@ -26,16 +27,19 @@ export default async function SettingsPage() {
             <button className={`${buttonClass} self-start`}>Salvar</button>
           </form>
         </Card>
-        <Card title="WhatsApp Cloud API (Meta)">
+        <Card title="Chatwoot (WhatsApp)">
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
             <dt className="text-slate-500">Status</dt>
-            <dd>{process.env.WHATSAPP_DRY_RUN === "true" ? "🧪 Modo teste (código só no log)" : whatsappReady ? "✅ Configurado" : "❌ Faltam variáveis"}</dd>
-            <dt className="text-slate-500">Número (ID)</dt>
-            <dd className="font-mono">{process.env.WHATSAPP_PHONE_NUMBER_ID ?? "—"}</dd>
-            <dt className="text-slate-500">Template</dt>
+            <dd>{process.env.CHATWOOT_DRY_RUN === "true" ? "🧪 Modo teste (código só no log)" : chatwootReady ? "✅ Configurado" : "❌ Faltam variáveis"}</dd>
+            <dt className="text-slate-500">Chatwoot</dt>
+            <dd className="font-mono">{process.env.CHATWOOT_URL ?? "—"} · conta {process.env.CHATWOOT_ACCOUNT_ID ?? "—"} · caixa {process.env.CHATWOOT_INBOX_ID ?? "—"}</dd>
+            <dt className="text-slate-500">Template do código</dt>
             <dd className="font-mono">{process.env.WHATSAPP_OTP_TEMPLATE ?? "—"} ({process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "pt_BR"})</dd>
           </dl>
-          <p className="mt-4 text-xs text-slate-400">As credenciais ficam nas variáveis de ambiente do servidor (.env).</p>
+          <p className="mt-4 text-sm text-slate-600">
+            Cada cliente vira contato no Chatwoot com as etiquetas <b>wifi</b>, <b>wifi-&lt;local&gt;</b> e, se aceitou, <b>{PROMO_LABEL}</b>.
+            Use essas etiquetas como público das campanhas de WhatsApp no Chatwoot.
+          </p>
         </Card>
       </div>
     </>

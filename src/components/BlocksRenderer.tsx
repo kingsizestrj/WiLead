@@ -53,6 +53,26 @@ function Coupon({ block }: { block: Extract<Block, { type: "coupon" }> }) {
   );
 }
 
+function Plans({ block }: { block: Extract<Block, { type: "plans" }> }) {
+  const plans = block.items
+    .split("\n")
+    .map((line) => line.split("|").map((part) => part.trim()))
+    .filter(([name]) => name);
+  return (
+    <section className="flex flex-col gap-3">
+      {block.title && <h2 className="px-1 text-xl font-extrabold">{block.title}</h2>}
+      {plans.map(([name, price, details]) => (
+        <div key={name} className="rounded-3xl border border-white/15 bg-white/10 p-5 backdrop-blur">
+          <p className="font-bold">{name}</p>
+          {price && <p className="mt-1 text-2xl font-black text-[var(--primary)]">{price}</p>}
+          {details && <p className="mt-1 text-sm opacity-80">{details}</p>}
+        </div>
+      ))}
+      {block.footnote && <p className="whitespace-pre-line px-1 text-xs opacity-70">{block.footnote}</p>}
+    </section>
+  );
+}
+
 export function BlocksRenderer({ blocks, onClick }: { blocks: Block[]; onClick?: (blockId: string) => void }) {
   return (
     <div className="flex flex-col gap-4">
@@ -108,6 +128,21 @@ export function BlocksRenderer({ blocks, onClick }: { blocks: Block[]; onClick?:
             return <Carousel key={block.id} images={block.images.split("\n").map((s) => s.trim()).filter(Boolean)} />;
           case "coupon":
             return <Coupon key={block.id} block={block} />;
+          case "plans":
+            return <Plans key={block.id} block={block} />;
+          case "whatsapp":
+            return block.phone ? (
+              <a
+                key={block.id}
+                href={`https://wa.me/${block.phone.replace(/\D/g, "")}?text=${encodeURIComponent(block.message)}`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => onClick?.(block.id)}
+                className="flex items-center justify-center gap-3 rounded-3xl bg-[#25d366] px-5 py-4 text-lg font-bold text-white shadow-lg"
+              >
+                <span className="text-2xl">💬</span> {block.label}
+              </a>
+            ) : null;
           case "instagram":
             return (
               <a

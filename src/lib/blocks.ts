@@ -5,7 +5,10 @@ export type Block =
   | { id: string; type: "video"; videoUrl: string }
   | { id: string; type: "carousel"; images: string }
   | { id: string; type: "coupon"; title: string; code: string; description: string }
-  | { id: string; type: "instagram"; handle: string; text: string };
+  | { id: string; type: "instagram"; handle: string; text: string }
+  // One plan per line: "Name | price | details"
+  | { id: string; type: "plans"; title: string; items: string; footnote: string }
+  | { id: string; type: "whatsapp"; phone: string; label: string; message: string };
 
 export type BlockType = Block["type"];
 
@@ -33,6 +36,8 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   carousel: "Carrossel de imagens",
   coupon: "Cupom de desconto",
   instagram: "Siga no Instagram",
+  plans: "Planos / pacotes",
+  whatsapp: "Botão WhatsApp",
 };
 
 export function newBlock(type: BlockType): Block {
@@ -52,5 +57,9 @@ export function newBlock(type: BlockType): Block {
       return { id, type, title: "10% OFF", code: "WIFI10", description: "Mostre este cupom no caixa" };
     case "instagram":
       return { id, type, handle: "", text: "Poste uma foto e marque a gente!" };
+    case "plans":
+      return { id, type, title: "Nossos planos", items: "300 Mega | R$ 99,90 | Wi-Fi 6", footnote: "" };
+    case "whatsapp":
+      return { id, type, phone: "", label: "Falar com a gente no WhatsApp", message: "Olá! Vim pelo Wi-Fi." };
   }
 }

@@ -30,7 +30,9 @@ export async function saveRouter(id: string | null, form: FormData) {
   await requireAdmin();
   const data = {
     name: str(form, "name"),
-    apiUrl: str(form, "apiUrl"),
+    host: str(form, "host"),
+    port: Number(str(form, "port")),
+    useTls: form.get("useTls") === "on",
     username: str(form, "username"),
     userProfile: str(form, "userProfile") || "default",
     insecureTls: form.get("insecureTls") === "on",
