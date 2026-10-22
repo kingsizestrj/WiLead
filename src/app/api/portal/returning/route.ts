@@ -4,7 +4,13 @@ import { db } from "@/lib/db";
 import { normalizeMac } from "@/lib/phone";
 import { grantAccess, resolveLocation } from "@/lib/portal";
 
-const schema = z.object({ mac: z.string(), ip: z.string(), server: z.string().min(1) });
+const schema = z.object({
+  mac: z.string(),
+  ip: z.string(),
+  server: z.string().min(1),
+  // $(interface-name); older login pages do not send it
+  iface: z.string().default(""),
+});
 
 // A device that was already verified only confirms its identity (no new OTP).
 export async function POST(req: Request) {
@@ -21,7 +27,7 @@ export async function POST(req: Request) {
       mac,
       ip: parsed.data.ip,
       userAgent: req.headers.get("user-agent"),
-      location: await resolveLocation(parsed.data.server),
+      location: await resolveLocation(parsed.data.server, parsed.data.iface),
       type: "RETURNING",
     });
     return NextResponse.json(access);

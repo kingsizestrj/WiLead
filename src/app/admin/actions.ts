@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { DEFAULT_THEME, newBlock, type Block, type Theme } from "@/lib/blocks";
+import { locationLabel, renameLabel } from "@/lib/chatwoot";
 import { db } from "@/lib/db";
 import { createTemplate, deleteTemplate, type NewTemplate } from "@/lib/meta-templates";
 import { testRouter } from "@/lib/mikrotik";
@@ -13,9 +14,19 @@ const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const optional = (f: FormData, k: string) => str(f, k) || null;
 const optionalInt = (f: FormData, k: string) => (str(f, k) ? Number(str(f, k)) : null);
 
+export async function createLocation(form: FormData) {
+  await requireAdmin();
+  const routers = await db.router.findMany({ take: 2 });
+  await db.location.create({
+    data: { name: str(form, "name"), city: optional(form, "city"), routerId: routers.length === 1 ? routers[0].id : null },
+  });
+  revalidatePath("/admin/locais");
+}
+
 export async function updateLocation(id: string, form: FormData) {
   await requireAdmin();
-  await db.location.update({
+  const before = await db.location.findUniqueOrThrow({ where: { id } });
+  const location = await db.location.update({
     where: { id },
     data: {
       name: str(form, "name"),
@@ -25,6 +36,53 @@ export async function updateLocation(id: string, form: FormData) {
       portalId: optional(form, "portalId"),
     },
   });
+  // Keeps the campaign audience: contacts already tagged with the old name get the new label.
+  await renameLabel(locationLabel(before.name), locationLabel(location.name)).catch((error) =>
+    console.error("[chatwoot] renomear etiqueta", error),
+  );
+  revalidatePath("/admin/locais");
+}
+
+// Moves a source (hotspot server + interface) to another location. Moving the last source
+// merges the points: its history goes along and the emptied location is removed.
+export async function moveLocationSource(sourceId: string, form: FormData) {
+  await requireAdmin();
+  const targetId = str(form, "locationId");
+  const source = await db.locationSource.findUniqueOrThrow({
+    where: { id: sourceId },
+    include: { location: { include: { _count: { select: { sources: true } } } } },
+  });
+  const from = source.location;
+  if (from.id === targetId) return;
+
+  if (from._count.sources > 1) {
+    await db.locationSource.update({ where: { id: sourceId }, data: { locationId: targetId } });
+  } else {
+    const target = await db.location.findUniqueOrThrow({ where: { id: targetId } });
+    const moved = { where: { locationId: from.id }, data: { locationId: targetId } };
+    await db.$transaction([
+      db.locationSource.update({ where: { id: sourceId }, data: { locationId: targetId } }),
+      db.access.updateMany(moved),
+      db.accessFailure.updateMany(moved),
+      db.portalEvent.updateMany(moved),
+      db.client.updateMany({ where: { firstLocationId: from.id }, data: { firstLocationId: targetId } }),
+      db.location.delete({ where: { id: from.id } }),
+    ]);
+    await renameLabel(locationLabel(from.name), locationLabel(target.name)).catch((error) =>
+      console.error("[chatwoot] juntar etiqueta", error),
+    );
+  }
+  revalidatePath("/admin/locais");
+}
+
+export async function deleteLocation(id: string) {
+  await requireAdmin();
+  const location = await db.location.findUniqueOrThrow({
+    where: { id },
+    include: { _count: { select: { sources: true, accesses: true } } },
+  });
+  if (location._count.sources || location._count.accesses) throw new Error("Só é possível excluir um local sem origens e sem acessos.");
+  await db.location.delete({ where: { id } });
   revalidatePath("/admin/locais");
 }
 

@@ -15,6 +15,8 @@ const schema = z.object({
   mac: z.string(),
   ip: z.string().ip({ version: "v4" }),
   server: z.string().min(1),
+  // $(interface-name); older login pages do not send it
+  iface: z.string().default(""),
 });
 
 export async function POST(req: Request) {
@@ -50,7 +52,7 @@ export async function POST(req: Request) {
   // Opened before sending so the device without mobile data receives the message right away.
   // A router failure only affects clients without mobile data, so it must not block the code.
   if (settings.otpWhatsappMinutes > 0) {
-    const location = await resolveLocation(parsed.data.server);
+    const location = await resolveLocation(parsed.data.server, parsed.data.iface);
     await allowWhatsappTemporarily(location.router, parsed.data.ip, settings.otpWhatsappMinutes).catch((error) =>
       console.error("[mikrotik] liberar WhatsApp", error),
     );

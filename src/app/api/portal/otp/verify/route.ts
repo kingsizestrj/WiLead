@@ -13,6 +13,8 @@ const schema = z.object({
   mac: z.string(),
   ip: z.string(),
   server: z.string().min(1),
+  // $(interface-name); older login pages do not send it
+  iface: z.string().default(""),
 });
 
 export async function POST(req: Request) {
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
 
   await db.otpCode.update({ where: { id: otp.id }, data: { consumedAt: new Date() } });
 
-  const location = await resolveLocation(parsed.data.server);
+  const location = await resolveLocation(parsed.data.server, parsed.data.iface);
   const existing = await db.client.findUnique({ where: { phone: otp.phone } });
   const client = await db.client.upsert({
     where: { phone: otp.phone },

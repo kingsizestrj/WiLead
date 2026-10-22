@@ -102,6 +102,7 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
         mac: hotspot.mac,
         ip: hotspot.ip,
         server: hotspot.server,
+        iface: hotspot.iface,
       });
       setOtpId(res.otpId);
       setWhatsappMinutes(res.whatsappMinutes);

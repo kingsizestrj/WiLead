@@ -33,20 +33,50 @@ model Router {
 }
 
 // A hotspot server on the MikroTik ($(server-name)). Used to know where clients come from.
+// A point where clients connect ("ponto"). It is fed by one or more sources.
 model Location {
-  id             String        @id @default(cuid())
-  hotspotServer  String        @unique
+  id             String           @id @default(cuid())
   name           String
   city           String?
   sessionMinutes Int?
   routerId       String?
-  router         Router?       @relation(fields: [routerId], references: [id], onDelete: SetNull)
+  router         Router?          @relation(fields: [routerId], references: [id], onDelete: SetNull)
   portalId       String?
-  portal         Portal?       @relation(fields: [portalId], references: [id], onDelete: SetNull)
-  createdAt      DateTime      @default(now())
+  portal         Portal?          @relation(fields: [portalId], references: [id], onDelete: SetNull)
+  createdAt      DateTime         @default(now())
   accesses       Access[]
+  failures       AccessFailure[]
   clients        Client[]
   events         PortalEvent[]
+  sources        LocationSource[]
+}
+
+// Where a client arrives from on the MikroTik: hotspot server + $(interface-name)
+// (physical port, VLAN interface or, with bridge use-ip-firewall, the bridge port).
+// Unknown sources create their own location; the admin can move them to merge points.
+model LocationSource {
+  id            String   @id @default(cuid())
+  hotspotServer String
+  // Empty for login pages that do not send the interface
+  interfaceName String   @default("")
+  locationId    String
+  location      Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+
+  @@unique([hotspotServer, interfaceName])
+}
+
+// A login that could not be granted (e.g. router unreachable), shown in the panel.
+model AccessFailure {
+  id         String   @id @default(cuid())
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  mac        String
+  clientName String
+  error      String
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model Portal {
@@ -156,10 +186,10 @@ model PortalEvent {
 }
 
 model Setting {
-  id             Int @id @default(1)
-  sessionMinutes Int @default(240)
-  otpTtlMinutes  Int @default(10)
-  otpMaxPerHour  Int @default(5)
+  id                 Int @id @default(1)
+  sessionMinutes     Int @default(240)
+  otpTtlMinutes      Int @default(10)
+  otpMaxPerHour      Int @default(5)
   // Minutes of pre-login WhatsApp access for a device that just requested a code (0 = off)
   otpWhatsappMinutes Int @default(3)
 }

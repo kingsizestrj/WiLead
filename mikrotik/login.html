@@ -18,12 +18,13 @@
       mac: "$(mac)",
       ip: "$(ip)",
       server: "$(server-name)",
+      iface: "$(interface-name)",
       login: "$(link-login-only)",
       dst: "$(link-orig)",
       error: err
     });
     window.location.replace("https://wilead.voltecautomacao.com.br/p?" + params.toString());
   </script>
-  <noscript><a href="https://wilead.voltecautomacao.com.br/p?mac=$(mac-esc)&ip=$(ip)&server=$(server-name)&login=$(link-login-only-esc)&dst=$(link-orig-esc)">Clique para conectar</a></noscript>
+  <noscript><a href="https://wilead.voltecautomacao.com.br/p?mac=$(mac-esc)&ip=$(ip)&server=$(server-name)&iface=$(interface-name)&login=$(link-login-only-esc)&dst=$(link-orig-esc)">Clique para conectar</a></noscript>
 </body>
 </html>

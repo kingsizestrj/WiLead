@@ -80,6 +80,25 @@ export const slugLabel = (value: string) =>
 
 export const PROMO_LABEL = "wifi-promocoes";
 
+export const locationLabel = (locationName: string) => `wifi-${slugLabel(locationName)}`;
+
+// Renaming the label in Chatwoot also renames it on every tagged contact, so campaign
+// audiences follow a location rename.
+export async function renameLabel(oldTitle: string, newTitle: string) {
+  if (oldTitle === newTitle) return;
+  if (dryRun()) {
+    console.log(`[chatwoot:dry-run] etiqueta ${oldTitle} -> ${newTitle}`);
+    return;
+  }
+  const { payload } = await api<{ payload: { id: number; title: string }[] }>("GET", "/labels");
+  const label = payload.find((l) => l.title === oldTitle);
+  if (!label) return;
+  if (payload.some((l) => l.title === newTitle)) throw new Error(`A etiqueta ${newTitle} já existe no Chatwoot`);
+  await api("PATCH", `/labels/${label.id}`, { title: newTitle });
+  knownLabels.delete(oldTitle);
+  knownLabels.add(newTitle);
+}
+
 // Keeps the contact segmented for Chatwoot campaigns:
 // labels "wifi", "wifi-<hotspot server>" and "wifi-promocoes" (only with opt-in),
 // plus custom attributes with the last location and visit count.

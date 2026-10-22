@@ -6,13 +6,14 @@ import { parseFilters } from "@/lib/filters";
 import { formatPhone } from "@/lib/phone";
 
 const PAGE_SIZE = 100;
+const TZ = process.env.TZ ?? "America/Sao_Paulo";
 
 export default async function AccessesPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const params = await searchParams;
   const filters = parseFilters(params);
   const page = Math.max(1, Number(params.page ?? 1));
   const where = { createdAt: { gte: filters.from, lte: filters.to }, locationId: filters.location, type: filters.type };
-  const [locations, total, accesses] = await Promise.all([
+  const [locations, total, accesses, failures] = await Promise.all([
     db.location.findMany({ orderBy: { name: "asc" } }),
     db.access.count({ where }),
     db.access.findMany({
@@ -22,6 +23,12 @@ export default async function AccessesPage({ searchParams }: { searchParams: Pro
       take: PAGE_SIZE,
       skip: (page - 1) * PAGE_SIZE,
     }),
+    db.accessFailure.findMany({
+      where: { createdAt: where.createdAt, locationId: filters.location },
+      include: { location: true },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
   ]);
   const query = new URLSearchParams(Object.entries(params).filter((e): e is [string, string] => !!e[1] && e[0] !== "page"));
 
@@ -29,6 +36,18 @@ export default async function AccessesPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader title="Acessos" subtitle={`${total} liberações no período`} />
       <FilterBar filters={filters} locations={locations} type />
+      {failures.length > 0 && (
+        <section className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4">
+          <h2 className="mb-2 text-sm font-semibold text-red-700">Falhas ao liberar no período (últimas {failures.length})</h2>
+          <ul className="flex flex-col gap-1 text-sm text-red-800">
+            {failures.map((f) => (
+              <li key={f.id}>
+                {f.createdAt.toLocaleString("pt-BR", { timeZone: TZ })} · {f.location.name} · {f.clientName} ({f.mac}): <b>{f.error}</b>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <Table head={["Data", "Local", "Cliente", "WhatsApp", "Tipo", "MAC", "IP", "Tempo liberado"]}>
         {accesses.map((a) => (
           <tr key={a.id}>

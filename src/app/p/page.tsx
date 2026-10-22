@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Wi-Fi" };
 type Search = Record<string, string | undefined>;
 
 // Entry point of the captive portal. MikroTik's login.html redirects here with
-// ?mac=$(mac)&ip=$(ip)&server=$(server-name)&login=$(link-login-only)&dst=$(link-orig-esc)&error=$(error)
+// ?mac=$(mac)&ip=$(ip)&server=$(server-name)&iface=$(interface-name)&login=$(link-login-only)&dst=$(link-orig-esc)&error=$(error)
 export default async function PortalPage({ searchParams }: { searchParams: Promise<Search> }) {
   const params = await searchParams;
   const mac = normalizeMac(params.mac ?? "");
@@ -24,7 +24,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
     );
   }
 
-  const location = await resolveLocation(params.server);
+  const location = await resolveLocation(params.server, params.iface ?? "");
   const portal = await resolvePortal(location);
   const device = await db.device.findUnique({ where: { mac }, include: { client: true } });
 
@@ -33,7 +33,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   return (
     <PortalShell theme={portal.theme as Theme} title={portal.welcomeTitle}>
       <PortalFlow
-        hotspot={{ mac, ip: params.ip ?? "", server: params.server, loginUrl: params.login, dst: params.dst ?? "" }}
+        hotspot={{ mac, ip: params.ip ?? "", server: params.server, iface: params.iface ?? "", loginUrl: params.login, dst: params.dst ?? "" }}
         portal={{
           id: portal.id,
           blocks: portal.blocks as Block[],

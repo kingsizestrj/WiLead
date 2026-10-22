@@ -1,10 +1,20 @@
-import { Card, PageHeader, buttonClass, inputClass } from "@/components/admin/ui";
+import { ConfirmButton } from "@/components/admin/ConfirmButton";
+import { Card, PageHeader, buttonClass, ghostButtonClass, inputClass } from "@/components/admin/ui";
 import { db } from "@/lib/db";
-import { updateLocation } from "../actions";
+import { createLocation, deleteLocation, moveLocationSource, updateLocation } from "../actions";
+
+const DAY = 24 * 60 * 60 * 1000;
 
 export default async function LocationsPage() {
+  const since = new Date(Date.now() - DAY);
   const [locations, routers, portals, settings] = await Promise.all([
-    db.location.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { accesses: true } } } }),
+    db.location.findMany({
+      orderBy: { name: "asc" },
+      include: {
+        sources: { orderBy: { createdAt: "asc" } },
+        _count: { select: { accesses: true, failures: { where: { createdAt: { gte: since } } } } },
+      },
+    }),
     db.router.findMany({ orderBy: { name: "asc" } }),
     db.portal.findMany({ orderBy: { name: "asc" } }),
     db.setting.findUniqueOrThrow({ where: { id: 1 } }),
@@ -14,15 +24,32 @@ export default async function LocationsPage() {
     <>
       <PageHeader
         title="Locais"
-        subtitle="Cada servidor hotspot do MikroTik vira um local automaticamente no primeiro acesso. Dê um nome amigável e defina a landing page."
+        subtitle="Cada ponto onde os clientes se conectam. O ponto é identificado pelo servidor hotspot e pela porta/VLAN de onde o cliente veio."
       />
+
+      <Card title="Novo local" className="mb-4">
+        <form action={createLocation} className="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto]">
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+            Nome
+            <input name="name" required placeholder="Praça Central" className={inputClass} />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
+            Cidade / bairro
+            <input name="city" placeholder="Grussaí" className={inputClass} />
+          </label>
+          <button className={buttonClass}>Criar local</button>
+        </form>
+        <p className="mt-3 text-xs text-slate-400">
+          Locais também são criados sozinhos quando um cliente chega por uma origem nova. Para juntar pontos, use &quot;Mover para&quot;: ao mover a última origem de um local, o histórico vai junto e o local vazio some.
+        </p>
+      </Card>
+
       <div className="flex flex-col gap-4">
         {locations.map((l) => (
           <Card key={l.id}>
             <form action={updateLocation.bind(null, l.id)} className="grid items-end gap-3 md:grid-cols-6">
               <label className="flex flex-col gap-1 text-xs font-medium text-slate-500 md:col-span-2">
-                Nome <span className="font-mono text-[10px] text-slate-400">servidor: {l.hotspotServer} · {l._count.accesses} acessos</span>
-                {!l.routerId && <span className="text-xs font-semibold text-red-600">⚠ Sem roteador: os clientes deste local não conseguem conectar</span>}
+                Nome <span className="text-[10px] text-slate-400">{l._count.accesses} acessos</span>
                 <input name="name" defaultValue={l.name} required className={inputClass} />
               </label>
               <label className="flex flex-col gap-1 text-xs font-medium text-slate-500">
@@ -49,6 +76,40 @@ export default async function LocationsPage() {
               </label>
               <button className={`${buttonClass} md:col-start-6`}>Salvar</button>
             </form>
+
+            {!l.routerId && <p className="mt-3 text-xs font-semibold text-red-600">⚠ Sem roteador: os clientes deste local não conseguem conectar.</p>}
+            {l._count.failures > 0 && (
+              <p className="mt-3 text-xs font-semibold text-red-600">⚠ {l._count.failures} falha(s) ao liberar nas últimas 24h. Veja o motivo em Acessos.</p>
+            )}
+
+            <div className="mt-4 flex flex-col gap-2 border-t border-slate-100 pt-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Origens</span>
+              {l.sources.map((s) => (
+                <form key={s.id} action={moveLocationSource.bind(null, s.id)} className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="rounded-lg bg-slate-100 px-2 py-1 font-mono text-xs">
+                    {s.hotspotServer}
+                    {s.interfaceName ? ` · ${s.interfaceName}` : ""}
+                  </span>
+                  {locations.length > 1 && (
+                    <>
+                      <select name="locationId" defaultValue={l.id} className={`${inputClass} !py-1 text-xs`}>
+                        {locations.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                      </select>
+                      <button className={`${ghostButtonClass} !px-2 !py-1 text-xs`}>Mover para</button>
+                    </>
+                  )}
+                </form>
+              ))}
+              {!l.sources.length && <p className="text-xs text-slate-400">Nenhuma origem. Mova para cá uma origem de outro local.</p>}
+            </div>
+
+            {!l.sources.length && !l._count.accesses && (
+              <form action={deleteLocation.bind(null, l.id)} className="mt-3">
+                <ConfirmButton message={`Excluir o local ${l.name}?`} className={`${ghostButtonClass} !px-2 !py-1 text-xs text-red-600`}>
+                  Excluir local
+                </ConfirmButton>
+              </form>
+            )}
           </Card>
         ))}
         {!locations.length && (
