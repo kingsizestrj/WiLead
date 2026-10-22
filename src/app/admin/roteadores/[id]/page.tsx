@@ -2,21 +2,30 @@ import { AlertTriangle, ArrowLeft, CheckCircle2, Info, ListChecks, MapPinPlus, R
 import Link from "next/link";
 import { Badge, Card, PageHeader, Table, td } from "@/components/admin/ui";
 import { db } from "@/lib/db";
-import { hotspotStatus, routerChecklist, trunkCandidates, type CheckItem, type HotspotStatus, type RouterInterface } from "@/lib/mikrotik-setup";
+import { hotspotStatus, routerChecklist, trunkCandidates, wileadUrls, type CheckItem, type HotspotStatus, type RouterInterface } from "@/lib/mikrotik-setup";
 import { NewPointForm, PrepareForm } from "./forms";
 
 export default async function RouterPage({ params }: { params: Promise<{ id: string }> }) {
   const router = await db.router.findUniqueOrThrow({ where: { id: (await params).id } });
   const sources = await db.locationSource.findMany({ include: { location: true } });
 
+  let configError: string | null = null;
+  try {
+    wileadUrls();
+  } catch (e) {
+    configError = (e as Error).message;
+  }
+
   let checklist: CheckItem[] = [];
   let hotspots: HotspotStatus[] = [];
   let interfaces: RouterInterface[] = [];
   let error: string | null = null;
-  try {
-    [checklist, hotspots, interfaces] = await Promise.all([routerChecklist(router), hotspotStatus(router), trunkCandidates(router)]);
-  } catch (e) {
-    error = (e as Error).message;
+  if (!configError) {
+    try {
+      [checklist, hotspots, interfaces] = await Promise.all([routerChecklist(router), hotspotStatus(router), trunkCandidates(router)]);
+    } catch (e) {
+      error = (e as Error).message;
+    }
   }
   const item = (label: string) => checklist.find((c) => c.label.startsWith(label));
 
@@ -27,7 +36,14 @@ export default async function RouterPage({ params }: { params: Promise<{ id: str
       </Link>
       <PageHeader title={router.name} subtitle={`${router.host}:${router.port} · usuário ${router.username}`} />
 
-      {error ? (
+      {configError ? (
+        <Card>
+          <p className="text-sm text-amber-300">Falta configurar o servidor do WiLead: {configError}</p>
+          <pre className="mt-3 overflow-x-auto rounded-xl bg-ink-900/70 p-3 text-xs text-ink-300">
+            {`cd ~/wilead\necho 'PUBLIC_URL="https://wilead.voltecautomacao.com.br"' >> .env\ndocker compose up -d`}
+          </pre>
+        </Card>
+      ) : error ? (
         <Card>
           <p className="text-sm text-rose-300">Não foi possível falar com o roteador: {error}</p>
           <p className="mt-2 text-sm text-ink-400">Confira IP, porta e usuário da API na lista de roteadores e se o serviço api aceita o IP do WiLead.</p>
