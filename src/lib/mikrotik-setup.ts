@@ -214,23 +214,35 @@ export async function createPoint(
     if (sameVlan) throw new Error(`A VLAN ${input.vlanId} já existe em ${input.trunk} (${sameVlan.name})`);
     if ((await print(api, "/interface", { name: names.vlan })).length) throw new Error(`A interface ${names.vlan} já existe`);
     if ((await print(api, "/ip/hotspot", { name: names.hotspot })).length) throw new Error(`O hotspot ${names.hotspot} já existe`);
+    if ((await print(api, "/ip/pool", { name: names.pool })).length) throw new Error(`O pool ${names.pool} já existe (sobra de outra configuração? remova em /ip pool)`);
+    if ((await print(api, "/ip/dhcp-server", { name: names.dhcp })).length) throw new Error(`O DHCP ${names.dhcp} já existe (sobra de outra configuração? remova em /ip dhcp-server)`);
+    if ((await print(api, "/ip/dhcp-server/network", { address: `${net}.0/24` })).length) {
+      throw new Error(`Já existe uma rede de DHCP ${net}.0/24 (sobra de outra configuração? remova em /ip dhcp-server network)`);
+    }
     const used = ((await api.write("/ip/address/print")) as Row[]).find((a) => overlaps(a.address, net));
     if (used) throw new Error(`A rede ${net}.0/24 conflita com ${used.address} em ${used.interface}`);
 
     const created: [string, string][] = [];
-    const add = async (path: string, args: string[]) => {
-      const [res] = (await api.write(`${path}/add`, args)) as Row[];
-      created.push([path, res.ret]);
+    const add = async (label: string, path: string, args: string[]) => {
+      try {
+        const [res] = (await api.write(`${path}/add`, args)) as Row[];
+        created.push([path, res.ret]);
+      } catch (error) {
+        throw new Error(`Erro ao criar ${label}: ${(error as Error).message}`);
+      }
     };
     const comment = `=comment=WiLead: ${input.slug}`;
     try {
-      await add("/interface/vlan", [`=name=${names.vlan}`, `=vlan-id=${input.vlanId}`, `=interface=${input.trunk}`, comment]);
-      await add("/ip/address", [`=address=${net}.1/24`, `=interface=${names.vlan}`, comment]);
-      await add("/ip/pool", [`=name=${names.pool}`, `=ranges=${net}.10-${net}.254`, comment]);
-      await add("/ip/hotspot", [`=name=${names.hotspot}`, `=interface=${names.vlan}`, `=address-pool=${names.pool}`, `=profile=${WILEAD_PROFILE}`, "=disabled=no"]);
-      await add("/ip/dhcp-server", [`=name=${names.dhcp}`, `=interface=${names.vlan}`, `=address-pool=${names.pool}`, `=lease-time=${input.leaseMinutes}m`, "=disabled=no"]);
-      await add("/ip/dhcp-server/network", [`=address=${net}.0/24`, `=gateway=${net}.1`, `=dns-server=${net}.1`, comment]);
-      await add("/ip/firewall/address-list", [`=list=${HOTSPOT_NETWORKS_LIST}`, `=address=${net}.0/24`, comment]);
+      await add(`a VLAN ${names.vlan}`, "/interface/vlan", [`=name=${names.vlan}`, `=vlan-id=${input.vlanId}`, `=interface=${input.trunk}`, comment]);
+      await add(`o IP ${net}.1/24`, "/ip/address", [`=address=${net}.1/24`, `=interface=${names.vlan}`, comment]);
+      await add(`o pool ${names.pool}`, "/ip/pool", [`=name=${names.pool}`, `=ranges=${net}.10-${net}.254`, comment]);
+      await add(`o hotspot ${names.hotspot}`, "/ip/hotspot", [`=name=${names.hotspot}`, `=interface=${names.vlan}`, `=address-pool=${names.pool}`, `=profile=${WILEAD_PROFILE}`, "=disabled=no"]);
+      await add(`o DHCP ${names.dhcp}`, "/ip/dhcp-server", [`=name=${names.dhcp}`, `=interface=${names.vlan}`, `=address-pool=${names.pool}`, `=lease-time=${input.leaseMinutes}m`, "=disabled=no"]);
+      await add(`a rede de DHCP ${net}.0/24`, "/ip/dhcp-server/network", [`=address=${net}.0/24`, `=gateway=${net}.1`, `=dns-server=${net}.1`, comment]);
+      // An entry left by an earlier setup is reused: the list only needs to contain the network.
+      if (!(await print(api, "/ip/firewall/address-list", { list: HOTSPOT_NETWORKS_LIST, address: `${net}.0/24` })).length) {
+        await add(`a entrada ${net}.0/24 na lista ${HOTSPOT_NETWORKS_LIST}`, "/ip/firewall/address-list", [`=list=${HOTSPOT_NETWORKS_LIST}`, `=address=${net}.0/24`, comment]);
+      }
     } catch (error) {
       for (const [path, id] of created.reverse()) await api.write(`${path}/remove`, [`=.id=${id}`]).catch(() => undefined);
       throw error;
