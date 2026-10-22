@@ -14,12 +14,17 @@ export type HotspotParams = {
 };
 
 // Locations are auto-registered the first time a hotspot server sends a client,
-// so the admin only needs to rename them and link a router/portal.
+// so the admin only needs to rename them. With a single router (one MikroTik serving
+// every hotspot) the new location is linked to it right away.
 export async function resolveLocation(server: string) {
+  const existing = await db.location.findUnique({ where: { hotspotServer: server }, include: { router: true, portal: true } });
+  if (existing) return existing;
+
+  const routers = await db.router.findMany({ take: 2 });
   return db.location.upsert({
     where: { hotspotServer: server },
     update: {},
-    create: { hotspotServer: server, name: server },
+    create: { hotspotServer: server, name: server, routerId: routers.length === 1 ? routers[0].id : null },
     include: { router: true, portal: true },
   });
 }
