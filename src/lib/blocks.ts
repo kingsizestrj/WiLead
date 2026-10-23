@@ -1,14 +1,17 @@
 export type Block =
   | { id: string; type: "hero"; title: string; subtitle: string; imageUrl: string }
   | { id: string; type: "text"; text: string }
-  | { id: string; type: "banner"; imageUrl: string; linkUrl: string; caption: string }
+  | { id: string; type: "banner"; imageUrl: string; linkUrl: string; caption: string; leadLabel?: string }
   | { id: string; type: "video"; videoUrl: string }
   | { id: string; type: "carousel"; images: string }
   | { id: string; type: "coupon"; title: string; code: string; description: string }
   | { id: string; type: "instagram"; handle: string; text: string }
   // One plan per line: "Name | price | details"
   | { id: string; type: "plans"; title: string; items: string; footnote: string }
-  | { id: string; type: "whatsapp"; phone: string; label: string; message: string };
+  | { id: string; type: "whatsapp"; phone: string; label: string; message: string; leadLabel?: string };
+
+// Chatwoot label given to whoever clicks the block (marks the contact as a lead).
+export const leadLabelOf = (block: Block) => ("leadLabel" in block && block.leadLabel?.trim()) || null;
 
 export type BlockType = Block["type"];
 

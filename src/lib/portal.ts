@@ -1,5 +1,6 @@
 import { Prisma, type Client, type Location, type Router } from "@prisma/client";
 import { after } from "next/server";
+import { leadLabelOf, type Block } from "./blocks";
 import { findOrCreateContact, locationLabel, syncContact } from "./chatwoot";
 import { db, getSettings } from "./db";
 import { upsertHotspotUser } from "./mikrotik";
@@ -52,7 +53,25 @@ export async function resolvePortal(location: Location) {
   return db.portal.findFirstOrThrow({ where: { isDefault: true } });
 }
 
-async function syncToChatwoot(client: Client, location: Location) {
+const LEAD_CLICK_WINDOW = 7 * 24 * 60 * 60 * 1000;
+
+// Lead labels of the landing page buttons this device clicked recently (also before signing up).
+export async function leadLabelsClickedBy(mac: string) {
+  const clicks = await db.portalEvent.findMany({
+    where: { type: "BLOCK_CLICK", mac, createdAt: { gte: new Date(Date.now() - LEAD_CLICK_WINDOW) } },
+    distinct: ["portalId", "blockId"],
+    select: { portalId: true, blockId: true },
+  });
+  if (!clicks.length) return [];
+  const portals = await db.portal.findMany({ where: { id: { in: clicks.map((c) => c.portalId) } } });
+  const labels = clicks.map((c) => {
+    const block = (portals.find((p) => p.id === c.portalId)?.blocks as Block[] | undefined)?.find((b) => b.id === c.blockId);
+    return block ? leadLabelOf(block) : null;
+  });
+  return [...new Set(labels.filter((l): l is string => !!l))];
+}
+
+async function syncToChatwoot(client: Client, location: Location, mac: string) {
   const contactId = client.chatwootContactId ?? (await findOrCreateContact(client.phone, client.name));
   if (!client.chatwootContactId) await db.client.update({ where: { id: client.id }, data: { chatwootContactId: contactId } });
   await syncContact({
@@ -61,6 +80,7 @@ async function syncToChatwoot(client: Client, location: Location) {
     locationName: location.name,
     optIn: client.marketingOptIn,
     visits: await db.access.count({ where: { clientId: client.id } }),
+    leadLabels: await leadLabelsClickedBy(mac),
   });
 }
 
@@ -104,7 +124,7 @@ export async function grantAccess(opts: {
   });
 
   // Segmentation for campaigns runs after the response so it never delays the login.
-  after(() => syncToChatwoot(opts.client, opts.location).catch((error) => console.error("[chatwoot] sync", error)));
+  after(() => syncToChatwoot(opts.client, opts.location, opts.mac).catch((error) => console.error("[chatwoot] sync", error)));
 
   return { ...credentials, minutes };
 }

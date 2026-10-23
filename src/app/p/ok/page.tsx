@@ -1,4 +1,5 @@
 import { PortalShell } from "@/components/PortalShell";
+import { TrackedBlocks } from "@/components/TrackedBlocks";
 import { BlocksRenderer } from "@/components/BlocksRenderer";
 import type { Block, Theme } from "@/lib/blocks";
 import { db } from "@/lib/db";
@@ -28,7 +29,11 @@ export default async function ConnectedPage({ searchParams }: { searchParams: Pr
           </a>
         )}
       </div>
-      <BlocksRenderer blocks={portal.blocks as Block[]} />
+      {params.location && params.mac ? (
+        <TrackedBlocks blocks={portal.blocks as Block[]} portalId={portal.id} locationId={params.location} mac={params.mac} />
+      ) : (
+        <BlocksRenderer blocks={portal.blocks as Block[]} />
+      )}
     </PortalShell>
   );
 }

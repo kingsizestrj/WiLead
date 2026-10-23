@@ -56,7 +56,7 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
   // Logs the device into the MikroTik hotspot; after login the router sends it to our success page.
   const connect = (g: Grant) => {
     setStep("connecting");
-    const dst = `${window.location.origin}/p/ok?portal=${portal.id}&location=${locationId}&dst=${encodeURIComponent(hotspot.dst)}`;
+    const dst = `${window.location.origin}/p/ok?portal=${portal.id}&location=${locationId}&mac=${encodeURIComponent(hotspot.mac)}&dst=${encodeURIComponent(hotspot.dst)}`;
     const url = new URL(hotspot.loginUrl);
     url.searchParams.set("username", g.username);
     url.searchParams.set("password", g.password);

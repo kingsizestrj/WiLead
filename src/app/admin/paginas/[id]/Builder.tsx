@@ -21,6 +21,7 @@ const FIELDS: Record<BlockType, { key: string; label: string; kind: FieldKind }[
     { key: "imageUrl", label: "Imagem do anúncio", kind: "image" },
     { key: "caption", label: "Legenda", kind: "text" },
     { key: "linkUrl", label: "Link ao clicar", kind: "text" },
+    { key: "leadLabel", label: "Etiqueta no Chatwoot ao clicar (opcional)", kind: "text" },
   ],
   video: [{ key: "videoUrl", label: "Vídeo (MP4 enviado ou link do YouTube)", kind: "video" }],
   carousel: [{ key: "images", label: "Imagens (uma URL por linha)", kind: "images" }],
@@ -42,6 +43,7 @@ const FIELDS: Record<BlockType, { key: string; label: string; kind: FieldKind }[
     { key: "phone", label: "Número do WhatsApp (com DDD)", kind: "text" },
     { key: "label", label: "Texto do botão", kind: "text" },
     { key: "message", label: "Mensagem que já vem escrita", kind: "textarea" },
+    { key: "leadLabel", label: "Etiqueta no Chatwoot ao clicar (ex.: lead-verao)", kind: "text" },
   ],
 };
 
@@ -201,7 +203,7 @@ export function Builder({ id, initial }: { id: string; initial: PortalInput }) {
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   {FIELDS[block.type].map((f) => {
-                    const value = (block as Record<string, string>)[f.key];
+                    const value = (block as Record<string, string>)[f.key] ?? "";
                     const onChange = (v: string) => setBlock(index, { [f.key]: v });
                     return (
                       <Field key={f.key} label={f.label}>

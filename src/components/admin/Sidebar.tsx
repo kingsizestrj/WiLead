@@ -2,6 +2,7 @@
 
 import {
   Activity,
+  Funnel,
   LayoutDashboard,
   LogOut,
   MapPin,
@@ -24,6 +25,7 @@ const NAV = [
   { href: "/admin", label: "Visão geral", icon: LayoutDashboard },
   { href: "/admin/clientes", label: "Clientes", icon: Users },
   { href: "/admin/acessos", label: "Acessos", icon: Activity },
+  { href: "/admin/funil", label: "Funil de vendas", icon: Funnel },
   { href: "/admin/paginas", label: "Landing pages", icon: Palette },
   { href: "/admin/templates", label: "Templates WhatsApp", icon: MessageSquareText },
   { href: "/admin/locais", label: "Locais", icon: MapPin },

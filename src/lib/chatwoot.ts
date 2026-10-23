@@ -108,12 +108,14 @@ export async function syncContact(opts: {
   locationName: string;
   optIn: boolean;
   visits: number;
+  // Labels of landing page buttons the device clicked (e.g. lead-verao)
+  leadLabels: string[];
 }) {
   if (dryRun()) {
-    console.log(`[chatwoot:dry-run] sync contato ${opts.contactId} local=${opts.locationLabel} optIn=${opts.optIn}`);
+    console.log(`[chatwoot:dry-run] sync contato ${opts.contactId} local=${opts.locationLabel} optIn=${opts.optIn} leads=${opts.leadLabels}`);
     return;
   }
-  const wanted = ["wifi", opts.locationLabel, ...(opts.optIn ? [PROMO_LABEL] : [])];
+  const wanted = ["wifi", opts.locationLabel, ...(opts.optIn ? [PROMO_LABEL] : []), ...opts.leadLabels];
   await ensureLabels(wanted);
 
   const current = await api<{ payload: string[] }>("GET", `/contacts/${opts.contactId}/labels`);
@@ -128,6 +130,44 @@ export async function syncContact(opts: {
       wifi_aceita_promocoes: opts.optIn,
     },
   });
+}
+
+// Adds labels to a contact keeping the ones it already has.
+export async function addContactLabels(contactId: number, labels: string[]) {
+  if (dryRun()) {
+    console.log(`[chatwoot:dry-run] contato ${contactId} += ${labels}`);
+    return;
+  }
+  await ensureLabels(labels);
+  const current = await api<{ payload: string[] }>("GET", `/contacts/${contactId}/labels`);
+  await api("POST", `/contacts/${contactId}/labels`, { labels: [...new Set([...current.payload, ...labels])] });
+}
+
+// Label titles of the account (suggestions in the panel).
+export async function accountLabels() {
+  const res = await api<{ payload: { title: string }[] }>("GET", "/labels");
+  return res.payload.map((l) => l.title).sort();
+}
+
+const MAX_FILTER_PAGES = 60;
+type FilterContact = { phone_number: string | null };
+
+// Phones (digits) of contacts that have the label on the contact or on any conversation.
+export async function phonesWithLabel(label: string) {
+  const payload = [{ attribute_key: "labels", filter_operator: "equal_to", values: [label], query_operator: null }];
+  const phones = new Set<string>();
+  const add = (c: FilterContact | undefined) => c?.phone_number && phones.add(c.phone_number.replace(/\D/g, ""));
+  for (let page = 1; page <= MAX_FILTER_PAGES; page++) {
+    const res = await api<{ payload: FilterContact[] }>("POST", `/contacts/filter?page=${page}`, { payload });
+    if (!res.payload.length) break;
+    res.payload.forEach(add);
+  }
+  for (let page = 1; page <= MAX_FILTER_PAGES; page++) {
+    const res = await api<{ payload: { meta: { sender: FilterContact } }[] }>("POST", `/conversations/filter?page=${page}`, { payload });
+    if (!res.payload.length) break;
+    res.payload.forEach((c) => add(c.meta.sender));
+  }
+  return phones;
 }
 
 // Meta credentials (token + WhatsApp Business Account) already configured on the Chatwoot inbox.

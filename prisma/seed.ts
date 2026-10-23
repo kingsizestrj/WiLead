@@ -43,6 +43,7 @@ const VERAO_BLOCKS: Block[] = [
     phone: process.env.VOLTEC_WHATSAPP_NUMBER ?? "",
     label: "Quero o Verão Conectado",
     message: "Olá! Vi no Wi-Fi e quero o Verão Conectado para a minha casa de praia.",
+    leadLabel: "lead-verao",
   },
   { ...newBlock("instagram"), type: "instagram", handle: "voltecbandalarga", text: "Marque a gente nas fotos do seu verão! 📸" },
   {
@@ -64,6 +65,15 @@ async function main() {
   });
 
   await db.setting.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } });
+
+  if (!(await db.funnelStep.count())) {
+    await db.funnelStep.createMany({
+      data: [
+        { position: 0, name: "Pediu o Verão Conectado (lead)", type: "CHATWOOT_LABEL", param: "lead-verao" },
+        { position: 1, name: "Venda fechada", type: "CHATWOOT_LABEL", param: "venda-fechada" },
+      ],
+    });
+  }
 
   if (!(await db.portal.findFirst({ where: { name: "Verão Conectado" } }))) {
     await db.portal.updateMany({ data: { isDefault: false } });

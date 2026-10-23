@@ -300,3 +300,19 @@ export async function removePointAction(locationId: string) {
   revalidatePath("/admin/locais");
   revalidatePath(`/admin/roteadores/${location.router.id}`);
 }
+
+export type FunnelStepInput = { name: string; type: "OPT_IN" | "RETURNED" | "BLOCK_CLICK" | "CHATWOOT_LABEL"; param: string };
+
+export async function saveFunnelSteps(steps: FunnelStepInput[]): Promise<{ error?: string }> {
+  await requireAdmin();
+  const invalid = steps.find((s) => !s.name.trim() || (s.type === "CHATWOOT_LABEL" && !s.param.trim()));
+  if (invalid) return { error: "Toda etapa precisa de nome, e as de etiqueta precisam da etiqueta." };
+  await db.$transaction([
+    db.funnelStep.deleteMany(),
+    db.funnelStep.createMany({
+      data: steps.map((s, position) => ({ position, name: s.name.trim(), type: s.type, param: s.param.trim() })),
+    }),
+  ]);
+  revalidatePath("/admin/funil");
+  return {};
+}
