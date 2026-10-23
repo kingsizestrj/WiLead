@@ -86,6 +86,7 @@ Se o roteador não alcançar o `PUBLIC_URL` (NAT de retorno), defina `ROUTER_FET
 O WhatsApp **não** fica liberado para todo mundo antes do login. Quando alguém pede o código, o WiLead coloca o IP do aparelho na lista `wilead-otp` do MikroTik por alguns minutos (padrão 3; ajuste ou desligue em **Configurações**).
 Só essa lista alcança os IPs da Meta (`wilead-meta`) antes do login, então o cliente sem 4G consegue ler o código. Quando o tempo acaba, o próprio MikroTik remove o IP da lista.
 A regra é criada pelo **Preparar roteador** no painel. Enquanto o IP está na lista, Instagram e Facebook também abrem, porque usam os mesmos IPs.
+A mesma lista também libera as notificações (Google FCM nas portas TCP 5228-5230 e Apple APNs em 17.0.0.0/8 na porta 5223), para o código aparecer na tela sem o cliente precisar abrir o WhatsApp.
 
 ## Saúde dos pontos
 
