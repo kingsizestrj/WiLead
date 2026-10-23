@@ -1,9 +1,10 @@
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { Card, PageHeader, buttonClass, ghostButtonClass, inputClass } from "@/components/admin/ui";
 import { db } from "@/lib/db";
-import { createLocation, deleteLocation, moveLocationSource, removePointAction, updateLocation } from "../actions";
+import { createLocation, deleteLocation, mergeLocation, moveLocationSource, removePointAction, updateLocation } from "../actions";
 
 const DAY = 24 * 60 * 60 * 1000;
+const accessesText = (n: number) => (n === 1 ? "O 1 acesso" : `Os ${n} acessos`);
 
 export default async function LocationsPage() {
   const since = new Date(Date.now() - DAY);
@@ -113,13 +114,30 @@ export default async function LocationsPage() {
                 </ConfirmButton>
               </form>
             )}
-            {!l.sources.length && !l._count.accesses && (
-              <form action={deleteLocation.bind(null, l.id)} className="mt-3">
-                <ConfirmButton message={`Excluir o local ${l.name}?`} className={`${ghostButtonClass} !px-2 !py-1 text-xs text-rose-300`}>
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/5 pt-3">
+              {locations.length > 1 && (
+                <form action={mergeLocation.bind(null, l.id)} className="flex flex-wrap items-center gap-2">
+                  <select name="targetId" required defaultValue="" className={`${inputClass} !w-auto !py-1 text-xs`}>
+                    <option value="" disabled>Juntar com…</option>
+                    {locations.filter((o) => o.id !== l.id).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                  </select>
+                  <ConfirmButton
+                    message={`Juntar "${l.name}" ao local escolhido? ${l._count.accesses ? `${accessesText(l._count.accesses)} e as origens vão junto` : "As origens vão junto"}, e "${l.name}" deixa de existir.`}
+                    className={`${ghostButtonClass} !px-2 !py-1 text-xs`}
+                  >
+                    Juntar
+                  </ConfirmButton>
+                </form>
+              )}
+              <form action={deleteLocation.bind(null, l.id)} className="ms-auto">
+                <ConfirmButton
+                  message={`Excluir "${l.name}" do WiLead?${l._count.accesses ? ` ${accessesText(l._count.accesses)} deste local também ${l._count.accesses === 1 ? "será apagado" : "serão apagados"} (para manter o histórico, use "Juntar").` : ""} Nada é alterado no MikroTik.`}
+                  className={`${ghostButtonClass} !px-2 !py-1 text-xs text-rose-300`}
+                >
                   Excluir local
                 </ConfirmButton>
               </form>
-            )}
+            </div>
           </Card>
         ))}
         {!locations.length && (

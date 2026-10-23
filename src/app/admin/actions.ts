@@ -44,8 +44,29 @@ export async function updateLocation(id: string, form: FormData) {
   revalidatePath("/admin/locais");
 }
 
+// Merges a location into another: sources, history and first-visit clients move to the
+// target, the location is removed and its Chatwoot label is renamed to the target's.
+async function mergeLocationInto(fromId: string, targetId: string) {
+  const [from, target] = await Promise.all([
+    db.location.findUniqueOrThrow({ where: { id: fromId } }),
+    db.location.findUniqueOrThrow({ where: { id: targetId } }),
+  ]);
+  const moved = { where: { locationId: fromId }, data: { locationId: targetId } };
+  await db.$transaction([
+    db.locationSource.updateMany(moved),
+    db.access.updateMany(moved),
+    db.accessFailure.updateMany(moved),
+    db.portalEvent.updateMany(moved),
+    db.client.updateMany({ where: { firstLocationId: fromId }, data: { firstLocationId: targetId } }),
+    db.location.delete({ where: { id: fromId } }),
+  ]);
+  await renameLabel(locationLabel(from.name), locationLabel(target.name)).catch((error) =>
+    console.error("[chatwoot] juntar etiqueta", error),
+  );
+}
+
 // Moves a source (hotspot server + interface) to another location. Moving the last source
-// merges the points: its history goes along and the emptied location is removed.
+// merges the points.
 export async function moveLocationSource(sourceId: string, form: FormData) {
   await requireAdmin();
   const targetId = str(form, "locationId");
@@ -53,36 +74,26 @@ export async function moveLocationSource(sourceId: string, form: FormData) {
     where: { id: sourceId },
     include: { location: { include: { _count: { select: { sources: true } } } } },
   });
-  const from = source.location;
-  if (from.id === targetId) return;
-
-  if (from._count.sources > 1) {
+  if (source.locationId === targetId) return;
+  if (source.location._count.sources > 1) {
     await db.locationSource.update({ where: { id: sourceId }, data: { locationId: targetId } });
   } else {
-    const target = await db.location.findUniqueOrThrow({ where: { id: targetId } });
-    const moved = { where: { locationId: from.id }, data: { locationId: targetId } };
-    await db.$transaction([
-      db.locationSource.update({ where: { id: sourceId }, data: { locationId: targetId } }),
-      db.access.updateMany(moved),
-      db.accessFailure.updateMany(moved),
-      db.portalEvent.updateMany(moved),
-      db.client.updateMany({ where: { firstLocationId: from.id }, data: { firstLocationId: targetId } }),
-      db.location.delete({ where: { id: from.id } }),
-    ]);
-    await renameLabel(locationLabel(from.name), locationLabel(target.name)).catch((error) =>
-      console.error("[chatwoot] juntar etiqueta", error),
-    );
+    await mergeLocationInto(source.locationId, targetId);
   }
   revalidatePath("/admin/locais");
 }
 
+export async function mergeLocation(id: string, form: FormData) {
+  await requireAdmin();
+  const targetId = str(form, "targetId");
+  if (targetId && targetId !== id) await mergeLocationInto(id, targetId);
+  revalidatePath("/admin/locais");
+}
+
+// Removes the location from WiLead with its history (nothing changes on the MikroTik).
+// If clients keep arriving from one of its sources, the location is registered again.
 export async function deleteLocation(id: string) {
   await requireAdmin();
-  const location = await db.location.findUniqueOrThrow({
-    where: { id },
-    include: { _count: { select: { sources: true, accesses: true } } },
-  });
-  if (location._count.sources || location._count.accesses) throw new Error("Só é possível excluir um local sem origens e sem acessos.");
   await db.location.delete({ where: { id } });
   revalidatePath("/admin/locais");
 }
