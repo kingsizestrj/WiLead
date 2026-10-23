@@ -1,9 +1,10 @@
 import { ConfirmButton } from "@/components/admin/ConfirmButton";
 import { Card, PageHeader, buttonClass, ghostButtonClass, inputClass } from "@/components/admin/ui";
 import { db } from "@/lib/db";
-import { createLocation, deleteLocation, mergeLocation, moveLocationSource, removePointAction, updateLocation } from "../actions";
+import { addAccessPoint, createLocation, deleteLocation, mergeLocation, moveLocationSource, removeAccessPoint, removePointAction, updateLocation } from "../actions";
 
 const DAY = 24 * 60 * 60 * 1000;
+const VENDOR_LABEL = { UNIFI: "UniFi", INTELBRAS: "Intelbras", GREATEK: "Greatek", OTHER: "Outro" };
 const accessesText = (n: number) => (n === 1 ? "O 1 acesso" : `Os ${n} acessos`);
 
 export default async function LocationsPage() {
@@ -13,6 +14,7 @@ export default async function LocationsPage() {
       orderBy: { name: "asc" },
       include: {
         sources: { orderBy: { createdAt: "asc" } },
+        accessPoints: { orderBy: { name: "asc" } },
         _count: { select: { accesses: true, failures: { where: { createdAt: { gte: since } } } } },
       },
     }),
@@ -93,7 +95,7 @@ export default async function LocationsPage() {
                   </span>
                   {locations.length > 1 && (
                     <>
-                      <select name="locationId" defaultValue={l.id} className={`${inputClass} !py-1 text-xs`}>
+                      <select name="locationId" defaultValue={l.id} className={`${inputClass} !w-auto !py-1 text-xs`}>
                         {locations.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                       </select>
                       <button className={`${ghostButtonClass} !px-2 !py-1 text-xs`}>Mover para</button>
@@ -102,6 +104,28 @@ export default async function LocationsPage() {
                 </form>
               ))}
               {!l.sources.length && <p className="text-xs text-ink-400">Nenhuma origem. Mova para cá uma origem de outro local.</p>}
+            </div>
+
+            <div className="mt-4 flex flex-col gap-2 border-t border-white/5 pt-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-ink-400">Access points (monitorados por ping)</span>
+              {l.accessPoints.map((ap) => (
+                <form key={ap.id} action={removeAccessPoint.bind(null, ap.id)} className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="font-semibold">{ap.name}</span>
+                  <span className="font-mono text-xs text-ink-400">{ap.ip}</span>
+                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-ink-300">{VENDOR_LABEL[ap.vendor]}</span>
+                  <ConfirmButton message={`Remover o AP ${ap.name} do monitoramento?`} className="ms-auto rounded-lg px-2 py-1 text-xs text-rose-300 hover:bg-rose-500/10">
+                    Remover
+                  </ConfirmButton>
+                </form>
+              ))}
+              <form action={addAccessPoint.bind(null, l.id)} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+                <input name="name" placeholder="Nome do AP (ex.: AP Quiosque 1)" className={`${inputClass} !py-1.5`} />
+                <input name="ip" required placeholder="IP de gerência" className={`${inputClass} !py-1.5`} />
+                <select name="vendor" defaultValue="UNIFI" className={`${inputClass} !py-1.5`}>
+                  {Object.entries(VENDOR_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+                <button className={`${ghostButtonClass} !py-1.5`}>Adicionar AP</button>
+              </form>
             </div>
 
             {l.mikrotikSlug && l.routerId && (

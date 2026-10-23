@@ -1,7 +1,8 @@
 import { Card, PageHeader, buttonClass, inputClass } from "@/components/admin/ui";
 import { PROMO_LABEL } from "@/lib/chatwoot";
 import { getSettings } from "@/lib/db";
-import { changePassword, saveSettings } from "../actions";
+import { changePassword, saveSettings, saveUnifi } from "../actions";
+import { TestUnifiButton } from "./TestUnifiButton";
 
 const PASSWORD_MESSAGES: Record<string, string> = {
   ok: "✅ Senha alterada.",
@@ -60,6 +61,33 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <input name="confirm" type="password" required minLength={8} placeholder="Repita a nova senha" className={inputClass} />
             {senha && <p className="text-sm">{PASSWORD_MESSAGES[senha]}</p>}
             <button className={`${buttonClass} self-start`}>Alterar senha</button>
+          </form>
+        </Card>
+        <Card title="Controladora UniFi (saúde dos pontos)">
+          <form action={saveUnifi} className="flex flex-col gap-3">
+            <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
+              Endereço da controladora
+              <input name="unifiUrl" defaultValue={settings.unifiUrl ?? ""} placeholder="https://10.0.0.5:8443" className={inputClass} />
+            </label>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
+                Usuário
+                <input name="unifiUser" defaultValue={settings.unifiUser ?? ""} className={inputClass} />
+              </label>
+              <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
+                Senha
+                <input name="unifiPassword" type="password" placeholder={settings.unifiPassword ? "(manter atual)" : ""} className={inputClass} />
+              </label>
+              <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
+                Site
+                <input name="unifiSite" defaultValue={settings.unifiSite} className={inputClass} />
+              </label>
+            </div>
+            <p className="text-xs text-ink-400">Use um usuário local da controladora só com leitura. Os APs aparecem em Saúde dos pontos para vincular a cada local.</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <button className={buttonClass}>Salvar</button>
+              <TestUnifiButton />
+            </div>
           </form>
         </Card>
       </div>

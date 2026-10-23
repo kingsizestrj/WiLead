@@ -87,6 +87,22 @@ O WhatsApp **não** fica liberado para todo mundo antes do login. Quando alguém
 Só essa lista alcança os IPs da Meta (`wilead-meta`) antes do login, então o cliente sem 4G consegue ler o código. Quando o tempo acaba, o próprio MikroTik remove o IP da lista.
 A regra é criada pelo **Preparar roteador** no painel. Enquanto o IP está na lista, Instagram e Facebook também abrem, porque usam os mesmos IPs.
 
+## Saúde dos pontos
+
+O WiLead verifica cada ponto a cada 5 minutos, sem instalar nada nos APs, e funciona com qualquer marca:
+
+- **Pelo MikroTik:** se o servidor hotspot está de pé, os aparelhos, os conectados, os IPs entregues pelo DHCP e o tráfego da interface do ponto.
+- **Ping dos APs:** o CCR pinga o IP de gerência de cada AP cadastrado em **Locais** (UniFi, Intelbras, Greatek ou outro).
+- **Controladora UniFi local** (opcional, em **Configurações**): AP online, clientes por AP, uptime e firmware. Em **Saúde dos pontos** os APs da controladora aparecem para vincular a cada ponto.
+
+Os alertas ficam só no painel: incidentes de **roteador inacessível**, **hotspot fora do ar**, **AP sem resposta** (duas verificações seguidas) e **ponto mudo** (15 minutos sem aparelhos num horário que costuma ter movimento). Eles fecham sozinhos quando o problema some, e o menu mostra quantos estão abertos.
+Os dados ficam guardados por 30 dias.
+
+## Funil de vendas
+
+Em **Funil de vendas** você monta as etapas depois de "Conectou no Wi-Fi": aceitou promoções, voltou N vezes, clicou num botão da landing page ou tem uma etiqueta no Chatwoot (no contato ou em qualquer conversa). A tela mostra quantos passaram em cada etapa, a conversão e a quebra por local.
+Botões de WhatsApp e banners podem dar uma etiqueta ao clicar (ex.: `lead-verao`). Quem clica antes de se cadastrar recebe a etiqueta quando conclui o cadastro.
+
 ## Chatwoot: código no WhatsApp e campanhas
 
 Todas as mensagens saem pelo Chatwoot, pela caixa de entrada WhatsApp Cloud:

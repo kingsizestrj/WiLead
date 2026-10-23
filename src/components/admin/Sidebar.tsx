@@ -3,6 +3,7 @@
 import {
   Activity,
   Funnel,
+  HeartPulse,
   LayoutDashboard,
   LogOut,
   MapPin,
@@ -26,6 +27,7 @@ const NAV = [
   { href: "/admin/clientes", label: "Clientes", icon: Users },
   { href: "/admin/acessos", label: "Acessos", icon: Activity },
   { href: "/admin/funil", label: "Funil de vendas", icon: Funnel },
+  { href: "/admin/saude", label: "Saúde dos pontos", icon: HeartPulse },
   { href: "/admin/paginas", label: "Landing pages", icon: Palette },
   { href: "/admin/templates", label: "Templates WhatsApp", icon: MessageSquareText },
   { href: "/admin/locais", label: "Locais", icon: MapPin },
@@ -33,7 +35,7 @@ const NAV = [
   { href: "/admin/config", label: "Configurações", icon: Settings },
 ];
 
-export function Sidebar({ userEmail, logout }: { userEmail: string; logout: () => Promise<void> }) {
+export function Sidebar({ userEmail, logout, openIncidents }: { userEmail: string; logout: () => Promise<void>; openIncidents: number }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [light, setLight] = useState(false);
@@ -65,6 +67,9 @@ export function Sidebar({ userEmail, logout }: { userEmail: string; logout: () =
           >
             <Icon className={`h-[18px] w-[18px] ${active ? "text-fuchsia-300" : ""}`} />
             {label}
+            {href === "/admin/saude" && openIncidents > 0 && (
+              <span className="ms-auto rounded-full bg-rose-500 px-2 py-0.5 text-[11px] font-bold text-snow">{openIncidents}</span>
+            )}
           </Link>
         );
       })}

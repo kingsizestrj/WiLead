@@ -50,6 +50,9 @@ model Location {
   clients        Client[]
   events         PortalEvent[]
   sources        LocationSource[]
+  accessPoints   AccessPoint[]
+  healthSamples  HealthSample[]
+  incidents      Incident[]
 }
 
 // Where a client arrives from on the MikroTik: hotspot server + $(interface-name)
@@ -187,12 +190,17 @@ model PortalEvent {
 }
 
 model Setting {
-  id                 Int @id @default(1)
-  sessionMinutes     Int @default(240)
-  otpTtlMinutes      Int @default(10)
-  otpMaxPerHour      Int @default(5)
+  id                 Int     @id @default(1)
+  sessionMinutes     Int     @default(240)
+  otpTtlMinutes      Int     @default(10)
+  otpMaxPerHour      Int     @default(5)
+  // Self-hosted UniFi Network controller (e.g. https://10.0.0.5:8443)
+  unifiUrl           String?
+  unifiUser          String?
+  unifiPassword      String?
+  unifiSite          String  @default("default")
   // Minutes of pre-login WhatsApp access for a device that just requested a code (0 = off)
-  otpWhatsappMinutes Int @default(3)
+  otpWhatsappMinutes Int     @default(3)
 }
 
 enum FunnelStepType {
@@ -210,4 +218,78 @@ model FunnelStep {
   type     FunnelStepType
   // RETURNED: minimum visits; BLOCK_CLICK: block id (empty = any button); CHATWOOT_LABEL: label
   param    String         @default("")
+}
+
+enum ApVendor {
+  UNIFI
+  INTELBRAS
+  GREATEK
+  OTHER
+}
+
+model AccessPoint {
+  id         String     @id @default(cuid())
+  locationId String
+  location   Location   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  name       String
+  ip         String
+  vendor     ApVendor   @default(OTHER)
+  createdAt  DateTime   @default(now())
+  samples    ApSample[]
+  incidents  Incident[]
+}
+
+// One measurement of a point every few minutes (from the MikroTik).
+model HealthSample {
+  id         String   @id @default(cuid())
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  at         DateTime @default(now())
+  // null when the router could not be reached
+  hotspotUp  Boolean?
+  hosts      Int?
+  active     Int?
+  leases     Int?
+  // Byte counters of the point's interface (rates come from consecutive samples)
+  rxBytes    BigInt?
+  txBytes    BigInt?
+
+  @@index([locationId, at])
+}
+
+model ApSample {
+  id        String      @id @default(cuid())
+  apId      String
+  ap        AccessPoint @relation(fields: [apId], references: [id], onDelete: Cascade)
+  at        DateTime    @default(now())
+  up        Boolean
+  latencyMs Float?
+  // From the UniFi controller
+  clients   Int?
+  uptimeSec Int?
+  firmware  String?
+
+  @@index([apId, at])
+}
+
+enum IncidentKind {
+  ROUTER_UNREACHABLE
+  HOTSPOT_DOWN
+  AP_DOWN
+  POINT_SILENT
+}
+
+// Shown in the panel while open; closed automatically when the condition clears.
+model Incident {
+  id         String       @id @default(cuid())
+  kind       IncidentKind
+  locationId String
+  location   Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  apId       String?
+  ap         AccessPoint? @relation(fields: [apId], references: [id], onDelete: Cascade)
+  detail     String
+  startedAt  DateTime     @default(now())
+  endedAt    DateTime?
+
+  @@index([endedAt])
 }

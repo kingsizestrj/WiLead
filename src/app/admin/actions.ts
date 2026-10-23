@@ -8,7 +8,9 @@ import { DEFAULT_THEME, newBlock, type Block, type Theme } from "@/lib/blocks";
 import { locationLabel, renameLabel, slugLabel } from "@/lib/chatwoot";
 import { db } from "@/lib/db";
 import { createTemplate, deleteTemplate, type NewTemplate } from "@/lib/meta-templates";
+import { collectHealth } from "@/lib/health";
 import { testRouter } from "@/lib/mikrotik";
+import { unifiDevices } from "@/lib/unifi";
 import { createPoint, prepareRouter, removePoint } from "@/lib/mikrotik-setup";
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
@@ -315,4 +317,68 @@ export async function saveFunnelSteps(steps: FunnelStepInput[]): Promise<{ error
   ]);
   revalidatePath("/admin/funil");
   return {};
+}
+
+const VENDORS = ["UNIFI", "INTELBRAS", "GREATEK", "OTHER"] as const;
+const isIp = (v: string) => /^(\d{1,3}\.){3}\d{1,3}$/.test(v);
+
+export async function addAccessPoint(locationId: string, form: FormData) {
+  await requireAdmin();
+  const ip = str(form, "ip");
+  const vendor = str(form, "vendor") as (typeof VENDORS)[number];
+  if (!isIp(ip) || !VENDORS.includes(vendor)) throw new Error("Informe um IP válido e a marca do AP.");
+  await db.accessPoint.create({ data: { locationId, ip, vendor, name: str(form, "name") || ip } });
+  revalidatePath("/admin/locais");
+  revalidatePath("/admin/saude");
+}
+
+export async function removeAccessPoint(id: string) {
+  await requireAdmin();
+  await db.accessPoint.delete({ where: { id } });
+  revalidatePath("/admin/locais");
+  revalidatePath("/admin/saude");
+}
+
+export async function saveUnifi(form: FormData) {
+  await requireAdmin();
+  const password = str(form, "unifiPassword");
+  await db.setting.update({
+    where: { id: 1 },
+    data: {
+      unifiUrl: optional(form, "unifiUrl"),
+      unifiUser: optional(form, "unifiUser"),
+      unifiSite: str(form, "unifiSite") || "default",
+      ...(password && { unifiPassword: password }),
+    },
+  });
+  revalidatePath("/admin/config");
+}
+
+export async function testUnifiAction(): Promise<string> {
+  await requireAdmin();
+  const s = await db.setting.findUniqueOrThrow({ where: { id: 1 } });
+  if (!s.unifiUrl || !s.unifiUser || !s.unifiPassword) return "❌ Preencha endereço, usuário e senha da controladora.";
+  try {
+    const devices = await unifiDevices({ url: s.unifiUrl, user: s.unifiUser, password: s.unifiPassword, site: s.unifiSite });
+    return `✅ ${devices.length} APs na controladora (${devices.filter((d) => d.online).length} online)`;
+  } catch (error) {
+    return `❌ ${(error as Error).message}`;
+  }
+}
+
+export async function collectHealthNow() {
+  await requireAdmin();
+  await collectHealth();
+  revalidatePath("/admin/saude");
+}
+
+// Links an AP listed by the UniFi controller to a location.
+export async function linkUnifiAp(form: FormData) {
+  await requireAdmin();
+  const ip = str(form, "ip");
+  const locationId = str(form, "locationId");
+  if (!isIp(ip) || !locationId) return;
+  await db.accessPoint.create({ data: { locationId, ip, vendor: "UNIFI", name: str(form, "name") || ip } });
+  revalidatePath("/admin/saude");
+  revalidatePath("/admin/locais");
 }
