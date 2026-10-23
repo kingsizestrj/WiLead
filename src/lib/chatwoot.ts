@@ -39,12 +39,9 @@ export async function findOrCreateContact(phone: string, name: string) {
   return created.payload.contact.id;
 }
 
-// Sends the WhatsApp "authentication" template with the code (body {{1}} + copy-code button).
-export async function sendOtp(phone: string, name: string, code: string) {
-  if (dryRun()) {
-    console.log(`[chatwoot:dry-run] OTP para ${phone}: ${code}`);
-    return;
-  }
+// Fallback for when Meta refuses the direct send (see whatsapp.ts): the WhatsApp "authentication"
+// template goes out through Chatwoot, in a conversation created resolved.
+export async function sendOtpViaChatwoot(phone: string, name: string, code: string, template: { name: string; language: string }) {
   const contactId = await findOrCreateContact(phone, name);
   await api("POST", "/conversations", {
     inbox_id: env().inboxId,
@@ -53,12 +50,28 @@ export async function sendOtp(phone: string, name: string, code: string) {
     message: {
       content: `${code} é o seu código de acesso ao Wi-Fi.`,
       template_params: {
-        name: process.env.WHATSAPP_OTP_TEMPLATE!,
+        name: template.name,
         category: "AUTHENTICATION",
-        language: process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? "pt_BR",
+        language: template.language,
         processed_params: { body: { "1": code }, buttons: [{ type: "url", parameter: code }] },
       },
     },
+  });
+}
+
+// The code itself goes straight to Meta (see whatsapp.ts); this keeps it in the client's history
+// as a private note, in a conversation created resolved so it stays out of the team queue.
+export async function noteOtpSent(phone: string, name: string, code: string) {
+  if (dryRun()) return;
+  const contactId = await findOrCreateContact(phone, name);
+  const conversation = await api<{ id: number }>("POST", "/conversations", {
+    inbox_id: env().inboxId,
+    contact_id: contactId,
+    status: "resolved",
+  });
+  await api("POST", `/conversations/${conversation.id}/messages`, {
+    content: `Código de acesso ao Wi-Fi enviado pelo WiLead: ${code}`,
+    private: true,
   });
 }
 
@@ -173,9 +186,16 @@ export async function phonesWithLabel(label: string) {
 // Meta credentials (token + WhatsApp Business Account) already configured on the Chatwoot inbox.
 // Requires the API token of an administrator.
 export async function whatsappInboxConfig() {
-  const inbox = await api<{ provider_config?: { api_key: string; business_account_id: string } }>("GET", `/inboxes/${env().inboxId}`);
+  const inbox = await api<{ provider_config?: { api_key: string; business_account_id: string; phone_number_id: string } }>(
+    "GET",
+    `/inboxes/${env().inboxId}`,
+  );
   if (!inbox.provider_config) throw new Error("O token do Chatwoot precisa ser de um administrador para acessar a caixa do WhatsApp.");
-  return { token: inbox.provider_config.api_key, wabaId: inbox.provider_config.business_account_id };
+  return {
+    token: inbox.provider_config.api_key,
+    wabaId: inbox.provider_config.business_account_id,
+    phoneNumberId: inbox.provider_config.phone_number_id,
+  };
 }
 
 export async function syncInboxTemplates() {

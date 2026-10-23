@@ -34,13 +34,13 @@ export default async function TemplatesPage() {
     <>
       <PageHeader
         title="Templates WhatsApp"
-        subtitle="Criados direto na Meta, com as credenciais da caixa de WhatsApp do Chatwoot. Depois de criar, o Chatwoot é sincronizado automaticamente."
+        subtitle="Criados direto na Meta, com as credenciais de Configurações → WhatsApp (API da Meta). Depois de criar, o Chatwoot é sincronizado automaticamente."
       />
 
       {error ? (
         <Card>
           <p className="text-sm text-rose-300">Não foi possível falar com a Meta: {error}</p>
-          <p className="mt-2 text-sm text-ink-300">Confira as variáveis do Chatwoot em Configurações (o token precisa ser de um administrador).</p>
+          <p className="mt-2 text-sm text-ink-300">Confira as credenciais em Configurações → WhatsApp (API da Meta) e use o botão Testar.</p>
         </Card>
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">

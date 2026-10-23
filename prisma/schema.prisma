@@ -201,6 +201,13 @@ model Setting {
   unifiSite          String  @default("default")
   // Minutes of pre-login WhatsApp access for a device that just requested a code (0 = off)
   otpWhatsappMinutes Int     @default(3)
+  // Meta WhatsApp Cloud API used to send the code (empty = the Chatwoot WhatsApp inbox's)
+  metaToken           String?
+  metaPhoneNumberId   String?
+  metaWabaId          String?
+  // Authentication template with the code (empty = WHATSAPP_OTP_TEMPLATE / WHATSAPP_TEMPLATE_LANGUAGE)
+  otpTemplate         String?
+  otpTemplateLanguage String?
 }
 
 enum FunnelStepType {

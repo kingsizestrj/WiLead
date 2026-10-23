@@ -5,12 +5,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { DEFAULT_THEME, newBlock, type Block, type Theme } from "@/lib/blocks";
-import { locationLabel, renameLabel, slugLabel } from "@/lib/chatwoot";
+import { locationLabel, renameLabel, slugLabel, whatsappInboxConfig } from "@/lib/chatwoot";
 import { db } from "@/lib/db";
 import { createTemplate, deleteTemplate, type NewTemplate } from "@/lib/meta-templates";
 import { collectHealth } from "@/lib/health";
 import { testRouter } from "@/lib/mikrotik";
 import { unifiDevices } from "@/lib/unifi";
+import { checkMetaSetup } from "@/lib/whatsapp";
 import { createPoint, prepareRouter, removePoint } from "@/lib/mikrotik-setup";
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
@@ -352,6 +353,51 @@ export async function saveUnifi(form: FormData) {
     },
   });
   revalidatePath("/admin/config");
+}
+
+export async function saveMeta(form: FormData) {
+  await requireAdmin();
+  const token = str(form, "metaToken");
+  await db.setting.update({
+    where: { id: 1 },
+    data: {
+      metaPhoneNumberId: optional(form, "metaPhoneNumberId"),
+      metaWabaId: optional(form, "metaWabaId"),
+      otpTemplate: optional(form, "otpTemplate"),
+      otpTemplateLanguage: optional(form, "otpTemplateLanguage"),
+      ...(token && { metaToken: token }),
+    },
+  });
+  revalidatePath("/admin/config");
+}
+
+// Fills the form with the credentials of the Chatwoot WhatsApp inbox (what WiLead used until now).
+export async function importMetaFromChatwoot() {
+  await requireAdmin();
+  const inbox = await whatsappInboxConfig();
+  await db.setting.update({
+    where: { id: 1 },
+    data: { metaToken: inbox.token, metaPhoneNumberId: inbox.phoneNumberId, metaWabaId: inbox.wabaId },
+  });
+  revalidatePath("/admin/config");
+}
+
+export async function clearMetaCredentials() {
+  await requireAdmin();
+  await db.setting.update({ where: { id: 1 }, data: { metaToken: null, metaPhoneNumberId: null, metaWabaId: null } });
+  revalidatePath("/admin/config");
+}
+
+export async function testMetaAction(): Promise<string> {
+  await requireAdmin();
+  try {
+    const { source, phone, template, templateStatus } = await checkMetaSetup();
+    const from = source === "chatwoot" ? " (credenciais da caixa do Chatwoot)" : "";
+    const status = templateStatus === "APPROVED" ? "✅ aprovado" : templateStatus ? `⚠️ ${templateStatus}` : "❌ não existe nesta conta";
+    return `✅ ${phone.verified_name} · ${phone.display_phone_number}${from} · template ${template.name} (${template.language}): ${status}`;
+  } catch (error) {
+    return `❌ ${(error as Error).message}`;
+  }
 }
 
 export async function testUnifiAction(): Promise<string> {

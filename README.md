@@ -1,6 +1,6 @@
 # WiLead
 
-Wi-Fi que vira lead: gestão de hotspot com MikroTik, landing page personalizada e verificação por código no WhatsApp. Todas as mensagens saem pelo Chatwoot (caixa WhatsApp Cloud da Meta).
+Wi-Fi que vira lead: gestão de hotspot com MikroTik, landing page personalizada e verificação por código no WhatsApp. O código sai direto pela API da Meta (WhatsApp Cloud) e o resto da comunicação (contatos, etiquetas e campanhas) fica no Chatwoot.
 
 ## Como funciona
 
@@ -106,10 +106,10 @@ Botões de WhatsApp e banners podem dar uma etiqueta ao clicar (ex.: `lead-verao
 
 ## Chatwoot: código no WhatsApp e campanhas
 
-Todas as mensagens saem pelo Chatwoot, pela caixa de entrada WhatsApp Cloud:
+O WiLead usa a caixa de entrada WhatsApp Cloud do Chatwoot:
 
-- **Código de acesso:** o sistema acha (ou cria) o contato pelo telefone e abre uma conversa já **resolvida** com o template de autenticação.
-  A conversa fica no histórico do cliente e não entra na fila da equipe. Se o cliente responder, ela reabre normalmente.
+- **Código de acesso:** sai **direto pela API da Meta**, com as credenciais de **Configurações → WhatsApp (API da Meta)** ou, se estiverem vazias, as da caixa do Chatwoot. Pelo Chatwoot, o envio esperava na fila interna dele antes de chegar à Meta. Se a Meta recusar o envio direto (ex.: token trocado na caixa), o código sai pelo Chatwoot como antes e o erro fica no log.
+  O Chatwoot recebe uma conversa já **resolvida** com uma nota interna com o código, para o histórico do cliente, fora da fila da equipe. Se o cliente responder ao código, a mensagem chega no Chatwoot normalmente.
 - **Segmentação para campanhas:** a cada acesso o contato recebe as etiquetas:
   - `wifi`: todo mundo que usou o Wi-Fi;
   - `wifi-<servidor hotspot>` (ex.: `wifi-hs-praca`): de onde o cliente veio;
@@ -122,7 +122,7 @@ Configuração:
 
 1. No Chatwoot, crie um token de acesso (Perfil → Token de acesso) de um agente administrador e preencha `CHATWOOT_URL`, `CHATWOOT_API_TOKEN`, `CHATWOOT_ACCOUNT_ID` e `CHATWOOT_INBOX_ID`.
 2. Na Meta, crie um template da categoria **Autenticação** (ex.: `codigo_wifi`, `pt_BR`) com o botão **Copiar código** e preencha `WHATSAPP_OTP_TEMPLATE`.
-3. No Chatwoot, sincronize os templates da caixa (Configurações da caixa → Templates) para o novo template aparecer.
+3. No Chatwoot, sincronize os templates da caixa (Configurações da caixa → Templates) para o novo template aparecer nas campanhas. O código usa o template direto na Meta.
 
 ### Templates WhatsApp direto no WiLead
 
@@ -130,7 +130,8 @@ O menu **Templates WhatsApp** cria, lista e exclui templates direto na Meta (Gra
 - **Código do Wi-Fi (autenticação):** um clique cria o template do código, com aviso de segurança, validade e botão "Copiar código".
 - **Mensagem / campanha:** templates de Marketing ou Utilidade, com título, variáveis (`{{1}}`, `{{2}}`…) e exemplos, rodapé e botões (resposta rápida, site ou ligação).
 
-As credenciais da Meta (token e conta do WhatsApp Business) vêm da caixa de WhatsApp do Chatwoot, então não precisa configurar nada a mais. Basta que o `CHATWOOT_API_TOKEN` seja de um **administrador**.
+As credenciais da Meta ficam em **Configurações → WhatsApp (API da Meta)**: token de acesso permanente (usuário do sistema no Meta Business), ID do número, ID da conta do WhatsApp Business, e o template e idioma do código. O botão **Copiar do Chatwoot** preenche com as da caixa de WhatsApp do Chatwoot, e **Testar** mostra o número e se o template do código está aprovado.
+Com a tela vazia, o WiLead usa as credenciais da caixa do Chatwoot (o `CHATWOOT_API_TOKEN` precisa ser de um **administrador**).
 Depois de criar ou excluir, o WiLead pede ao Chatwoot para sincronizar os templates. A lista mostra o status da Meta (em análise, aprovado ou rejeitado com o motivo).
 
 ## Landing page "Verão Conectado"

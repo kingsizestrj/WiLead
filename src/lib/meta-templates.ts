@@ -1,4 +1,5 @@
-import { syncInboxTemplates, whatsappInboxConfig } from "./chatwoot";
+import { syncInboxTemplates } from "./chatwoot";
+import { metaApi, metaCredentials } from "./whatsapp";
 
 // WhatsApp message templates managed directly on the Meta Graph API.
 // https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates
@@ -36,19 +37,10 @@ export type NewTemplate = {
   components: TemplateComponent[];
 };
 
+// Calls on the WhatsApp Business Account of the configured credentials (see whatsapp.ts).
 async function graph<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const { token, wabaId } = await whatsappInboxConfig();
-  const version = process.env.META_GRAPH_VERSION ?? "v23.0";
-  const base = process.env.META_GRAPH_URL ?? "https://graph.facebook.com";
-  const res = await fetch(`${base}/${version}/${wabaId}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(15000),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.error_user_msg ?? data.error?.message ?? `Meta ${res.status}`);
-  return data;
+  const credentials = await metaCredentials();
+  return metaApi<T>(method, `/${credentials.wabaId}${path}`, body, credentials);
 }
 
 export async function listTemplates() {

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db, getSettings } from "@/lib/db";
 import { normalizeMac, normalizePhone } from "@/lib/phone";
-import { sendOtp } from "@/lib/chatwoot";
+import { sendOtp } from "@/lib/whatsapp";
 import { allowWhatsappTemporarily } from "@/lib/mikrotik";
 import { resolveLocation } from "@/lib/portal";
 
