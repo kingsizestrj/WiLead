@@ -18,6 +18,16 @@ const COMMENT = {
 // Rule from the first setup.rsc that opened WhatsApp to everyone before login.
 const LEGACY_WHATSAPP_COMMENT = "WhatsApp (Meta)";
 
+// Phones with the screen off stop answering the router's keepalive, and the RouterOS default
+// (2m) logged clients out minutes after they connected. Each user's limit-uptime sets how long
+// the access lasts, so a long keepalive only stops those drops.
+const KEEPALIVE_MINUTES = 30;
+const UNIT_MINUTES: Record<string, number> = { w: 10080, d: 1440, h: 60, m: 1, s: 1 / 60 };
+
+// RouterOS durations such as "2m", "1h30m" or "none"
+const minutes = (value: string | undefined) =>
+  value === "none" ? Infinity : [...(value ?? "").matchAll(/(\d+)([wdhms])/g)].reduce((t, [, n, u]) => t + Number(n) * UNIT_MINUTES[u], 0);
+
 // Meta (AS32934) blocks used by WhatsApp; see https://bgp.he.net/AS32934
 const META_NETWORKS = [
   "31.13.24.0/21", "31.13.64.0/18", "45.64.40.0/22", "57.144.0.0/14", "66.220.144.0/20",
@@ -96,8 +106,12 @@ export async function routerChecklist(router: Router): Promise<CheckItem[]> {
       },
       {
         label: `Perfil de usuário "${router.userProfile}"`,
-        ok: !!userProfile,
-        detail: userProfile ? `usado nos usuários liberados (shared-users=${userProfile["shared-users"]})` : "não existe: a liberação da internet falha",
+        ok: !!userProfile && minutes(userProfile["keepalive-timeout"]) >= KEEPALIVE_MINUTES,
+        detail: !userProfile
+          ? "não existe: a liberação da internet falha"
+          : minutes(userProfile["keepalive-timeout"]) >= KEEPALIVE_MINUTES
+            ? `usado nos usuários liberados (shared-users=${userProfile["shared-users"]}, keepalive ${userProfile["keepalive-timeout"]})`
+            : `keepalive de ${userProfile["keepalive-timeout"]}: o cliente perde a internet quando bloqueia a tela`,
       },
       {
         label: "login.html do WiLead",
@@ -179,10 +193,11 @@ export async function prepareRouter(router: Router, opts: { nat: NatMode; enable
     log.push(`Perfil "${WILEAD_PROFILE}" com login por http-pap e cookie`);
 
     // User profile applied to the users WiLead creates (one device per user).
-    if (!(await print(api, "/ip/hotspot/user/profile", { name: router.userProfile })).length) {
-      await api.write("/ip/hotspot/user/profile/add", [`=name=${router.userProfile}`, "=shared-users=1"]);
-      log.push(`Perfil de usuário "${router.userProfile}" criado`);
-    }
+    const keepalive = `=keepalive-timeout=${KEEPALIVE_MINUTES}m`;
+    const [userProfile] = await print(api, "/ip/hotspot/user/profile", { name: router.userProfile });
+    if (userProfile) await api.write("/ip/hotspot/user/profile/set", [`=.id=${userProfile[".id"]}`, keepalive]);
+    else await api.write("/ip/hotspot/user/profile/add", [`=name=${router.userProfile}`, "=shared-users=1", keepalive]);
+    log.push(`Perfil de usuário "${router.userProfile}" com keepalive de ${KEEPALIVE_MINUTES} minutos`);
 
     await upsertByComment(api, "/ip/hotspot/walled-garden", COMMENT.portal, [`=dst-host=${host}`, "=action=allow"]);
     await upsertByComment(api, "/ip/hotspot/walled-garden/ip", COMMENT.portal, [`=dst-host=${host}`, "=action=accept"]);
