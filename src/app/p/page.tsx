@@ -3,7 +3,7 @@ import { PortalShell } from "@/components/PortalShell";
 import type { Block, Theme } from "@/lib/blocks";
 import { db } from "@/lib/db";
 import { maskPhone, normalizeMac } from "@/lib/phone";
-import { resolveLocation, resolvePortal } from "@/lib/portal";
+import { pendingOtps, resolveLocation, resolvePortal } from "@/lib/portal";
 import { PortalFlow } from "./PortalFlow";
 
 export const metadata: Metadata = { title: "Wi-Fi" };
@@ -27,6 +27,9 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const location = await resolveLocation(params.server, params.iface ?? "");
   const portal = await resolvePortal(location);
   const device = await db.device.findUnique({ where: { mac }, include: { client: true } });
+  // Leaving to read the code in WhatsApp reloads the captive portal window, so a code
+  // already sent to this device is resumed instead of starting the sign-up again.
+  const [pendingOtp] = await pendingOtps(mac);
 
   await db.portalEvent.create({ data: { type: "VIEW", portalId: portal.id, locationId: location.id, mac } });
 
@@ -43,6 +46,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         }}
         locationId={location.id}
         known={device ? { name: device.client.name.split(" ")[0], phone: maskPhone(device.client.phone) } : null}
+        pending={pendingOtp ? { otpId: pendingOtp.id, phone: maskPhone(pendingOtp.phone) } : null}
         routerError={params.error ?? null}
       />
     </PortalShell>

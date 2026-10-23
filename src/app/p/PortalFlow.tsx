@@ -11,6 +11,8 @@ type Props = {
   portal: { id: string; blocks: Block[]; adVideoUrl: string | null; adSeconds: number; termsText: string };
   locationId: string;
   known: { name: string; phone: string } | null;
+  // Code already sent to this device and still valid (client came back from WhatsApp)
+  pending: { otpId: string; phone: string } | null;
   routerError: string | null;
 };
 
@@ -23,7 +25,10 @@ const primaryButton =
   "flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--primary)] px-4 py-4 text-base font-bold text-snow shadow-[0_14px_40px_-12px_var(--primary)] ring-1 ring-snow/20 transition hover:brightness-110 active:scale-[.98] disabled:opacity-60";
 
 function formatPhoneInput(value: string) {
-  const d = value.replace(/\D/g, "").slice(0, 11);
+  let d = value.replace(/\D/g, "").replace(/^0+/, "");
+  // Autofill and pasted numbers bring the country code (+55); the field takes DDD + number only
+  if (d.length > 11 && d.startsWith("55")) d = d.slice(2);
+  d = d.slice(0, 11);
   if (d.length <= 2) return d;
   if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
@@ -36,12 +41,12 @@ async function post<T>(url: string, body: unknown): Promise<T> {
   return data;
 }
 
-export function PortalFlow({ hotspot, portal, locationId, known, routerError }: Props) {
-  const [step, setStep] = useState<Step>(known ? "confirm" : "register");
+export function PortalFlow({ hotspot, portal, locationId, known, pending, routerError }: Props) {
+  const [step, setStep] = useState<Step>(pending ? "code" : known ? "confirm" : "register");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(routerError);
   const [form, setForm] = useState({ name: "", phone: "", email: "", optIn: true });
-  const [otpId, setOtpId] = useState("");
+  const [otpId, setOtpId] = useState(pending?.otpId ?? "");
   const [whatsappMinutes, setWhatsappMinutes] = useState(0);
   const [code, setCode] = useState("");
   const [grant, setGrant] = useState<Grant | null>(null);
@@ -168,7 +173,7 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
             }}
           >
             <p className="opacity-90">
-              Enviamos um código de 6 dígitos para o WhatsApp <b>{form.phone}</b>
+              Enviamos um código de 6 dígitos para o WhatsApp <b>{form.phone || pending?.phone}</b>
             </p>
             {whatsappMinutes > 0 && (
               <p className="rounded-xl bg-snow/10 px-4 py-2 text-sm">
@@ -183,7 +188,10 @@ export function PortalFlow({ hotspot, portal, locationId, known, routerError }: 
             </button>
             <div className="flex justify-between text-sm opacity-80">
               <button type="button" className="underline" onClick={() => setStep("register")}>Corrigir número</button>
-              <button type="button" className="underline" disabled={busy} onClick={sendCode}>Reenviar código</button>
+              {/* A resumed code has no form data to resend; "Corrigir número" asks again */}
+              {form.phone && (
+                <button type="button" className="underline" disabled={busy} onClick={sendCode}>Reenviar código</button>
+              )}
             </div>
           </form>
         )}

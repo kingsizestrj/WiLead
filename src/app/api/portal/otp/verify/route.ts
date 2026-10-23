@@ -3,9 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { normalizeMac } from "@/lib/phone";
-import { grantAccess, resolveLocation } from "@/lib/portal";
-
-const MAX_ATTEMPTS = 5;
+import { grantAccess, pendingOtps, resolveLocation } from "@/lib/portal";
 
 const schema = z.object({
   otpId: z.string(),
@@ -22,17 +20,28 @@ export async function POST(req: Request) {
   const mac = parsed.success ? normalizeMac(parsed.data.mac) : null;
   if (!parsed.success || !mac) return NextResponse.json({ error: "Código inválido." }, { status: 422 });
 
-  const otp = await db.otpCode.findUnique({ where: { id: parsed.data.otpId } });
-  if (!otp || otp.mac !== mac || otp.consumedAt || otp.expiresAt < new Date() || otp.attempts >= MAX_ATTEMPTS) {
+  const pending = await pendingOtps(mac);
+  const current = pending.find((o) => o.id === parsed.data.otpId);
+  if (!current) {
     return NextResponse.json({ error: "Código expirado. Peça um novo." }, { status: 410 });
   }
 
-  if (!(await bcrypt.compare(parsed.data.code, otp.codeHash))) {
-    await db.otpCode.update({ where: { id: otp.id }, data: { attempts: { increment: 1 } } });
+  // Clients often tap "Reenviar" and then type the code of an earlier message, so any
+  // pending code of the device is accepted; wrong attempts count on the code on screen.
+  let otp: (typeof pending)[number] | undefined;
+  for (const candidate of pending) {
+    if (await bcrypt.compare(parsed.data.code, candidate.codeHash)) {
+      otp = candidate;
+      break;
+    }
+  }
+  if (!otp) {
+    await db.otpCode.update({ where: { id: current.id }, data: { attempts: { increment: 1 } } });
     return NextResponse.json({ error: "Código incorreto." }, { status: 422 });
   }
 
-  await db.otpCode.update({ where: { id: otp.id }, data: { consumedAt: new Date() } });
+  // The device's other codes are closed too, so the portal stops resuming them.
+  await db.otpCode.updateMany({ where: { id: { in: pending.map((o) => o.id) } }, data: { consumedAt: new Date() } });
 
   const location = await resolveLocation(parsed.data.server, parsed.data.iface);
   const existing = await db.client.findUnique({ where: { phone: otp.phone } });

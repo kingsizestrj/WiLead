@@ -53,6 +53,16 @@ export async function resolvePortal(location: Location) {
   return db.portal.findFirstOrThrow({ where: { isDefault: true } });
 }
 
+export const OTP_MAX_ATTEMPTS = 5;
+
+// Codes sent to the device that can still be typed, newest first.
+export function pendingOtps(mac: string) {
+  return db.otpCode.findMany({
+    where: { mac, consumedAt: null, expiresAt: { gt: new Date() }, attempts: { lt: OTP_MAX_ATTEMPTS } },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 const LEAD_CLICK_WINDOW = 7 * 24 * 60 * 60 * 1000;
 
 // Lead labels of the landing page buttons this device clicked recently (also before signing up).
