@@ -186,4 +186,4 @@ export function BlocksRenderer({ blocks, onClick }: { blocks: Block[]; onClick?:
   );
 }
 
-export { Video };
+export { Video, youtubeId };

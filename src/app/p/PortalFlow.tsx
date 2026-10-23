@@ -1,8 +1,8 @@
 "use client";
 
-import { MessageCircle, Wifi } from "lucide-react";
-import { useEffect, useState } from "react";
-import { BlocksRenderer, Video } from "@/components/BlocksRenderer";
+import { MessageCircle, Volume2, Wifi } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { BlocksRenderer, Video, youtubeId } from "@/components/BlocksRenderer";
 import type { Block } from "@/lib/blocks";
 import type { HotspotParams } from "@/lib/portal";
 
@@ -51,6 +51,10 @@ export function PortalFlow({ hotspot, portal, locationId, known, pending, router
   const [code, setCode] = useState("");
   const [grant, setGrant] = useState<Grant | null>(null);
   const [countdown, setCountdown] = useState(portal.adSeconds);
+  const adRef = useRef<HTMLVideoElement>(null);
+  const [adMuted, setAdMuted] = useState(false);
+  // An uploaded video (not YouTube) can have its sound unlocked by the client's tap
+  const adIsFile = !!portal.adVideoUrl && !youtubeId(portal.adVideoUrl);
 
   const track = (type: "AD_VIDEO_COMPLETED" | "BLOCK_CLICK", blockId?: string) =>
     navigator.sendBeacon?.(
@@ -87,6 +91,37 @@ export function PortalFlow({ hotspot, portal, locationId, known, pending, router
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, countdown, grant]);
 
+  // With the sound unlocked by unlockAd the video plays with audio; if the browser still
+  // refuses, it plays muted and the client turns the sound on with one tap.
+  useEffect(() => {
+    const video = adRef.current;
+    if (step !== "ad" || !video) return;
+    video.currentTime = 0;
+    video.muted = false;
+    video.play().catch(() => {
+      video.muted = true;
+      video.play().catch(() => {});
+    });
+  }, [step]);
+
+  // Browsers only allow sound when playback starts from a tap. The tap that releases the
+  // internet starts and pauses the sponsor video (muted, nothing is heard), which unlocks
+  // its sound for when it plays after the grant.
+  const unlockAd = () => {
+    const video = adRef.current;
+    if (!video) return;
+    video.muted = true;
+    video.play().catch(() => {});
+    video.pause();
+  };
+
+  const unmuteAd = () => {
+    const video = adRef.current;
+    if (!video) return;
+    video.muted = false;
+    video.play().catch(() => {});
+  };
+
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     setError(null);
@@ -99,7 +134,10 @@ export function PortalFlow({ hotspot, portal, locationId, known, pending, router
     }
   };
 
-  const confirmReturning = () => run(async () => onGranted(await post<Grant>("/api/portal/returning", hotspot)));
+  const confirmReturning = () => {
+    unlockAd();
+    run(async () => onGranted(await post<Grant>("/api/portal/returning", hotspot)));
+  };
 
   const sendCode = () =>
     run(async () => {
@@ -116,7 +154,10 @@ export function PortalFlow({ hotspot, portal, locationId, known, pending, router
       setStep("code");
     });
 
-  const verifyCode = () => run(async () => onGranted(await post<Grant>("/api/portal/otp/verify", { ...hotspot, otpId, code })));
+  const verifyCode = () => {
+    unlockAd();
+    run(async () => onGranted(await post<Grant>("/api/portal/otp/verify", { ...hotspot, otpId, code })));
+  };
 
   return (
     <>
@@ -196,10 +237,24 @@ export function PortalFlow({ hotspot, portal, locationId, known, pending, router
           </form>
         )}
 
-        {step === "ad" && portal.adVideoUrl && (
-          <div className="flex flex-col gap-3 text-center">
+        {/* An uploaded video stays mounted (hidden) so the tap before the grant can unlock its sound */}
+        {portal.adVideoUrl && (step === "ad" || adIsFile) && (
+          <div className={`${step === "ad" ? "flex" : "hidden"} flex-col gap-3 text-center`}>
             <p className="text-sm opacity-80">Um recado dos nossos parceiros</p>
-            <Video url={portal.adVideoUrl} className="rounded-2xl" />
+            {adIsFile ? (
+              <div className="relative">
+                <video ref={adRef} className="w-full rounded-2xl" src={portal.adVideoUrl} preload="metadata" loop playsInline controls
+                  onVolumeChange={(e) => setAdMuted(e.currentTarget.muted)} />
+                {step === "ad" && adMuted && (
+                  <button type="button" onClick={unmuteAd}
+                    className="absolute inset-0 m-auto flex h-fit w-fit items-center gap-2 rounded-full bg-black/70 px-5 py-3 font-semibold text-snow">
+                    <Volume2 className="h-5 w-5" /> Toque para ativar o som
+                  </button>
+                )}
+              </div>
+            ) : (
+              <Video url={portal.adVideoUrl} className="rounded-2xl" />
+            )}
             <p className="font-semibold">Sua internet será liberada em {countdown}s</p>
           </div>
         )}
