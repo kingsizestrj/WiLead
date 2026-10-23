@@ -47,10 +47,15 @@ async function upsertByComment(api: RouterOSAPI, path: string, comment: string, 
 export function wileadUrls() {
   const publicUrl = process.env.PUBLIC_URL?.replace(/\/$/, "");
   if (!publicUrl) throw new Error("Configure PUBLIC_URL no .env do servidor (ex.: https://wilead.voltecautomacao.com.br)");
-  // Address the routers use to download login.html (an internal URL avoids hairpin NAT).
+  // Address the routers use to download the hotspot pages (an internal URL avoids hairpin NAT).
   const routerUrl = (process.env.ROUTER_FETCH_URL ?? publicUrl).replace(/\/$/, "");
-  return { publicUrl, host: new URL(publicUrl).hostname, loginHtmlUrl: `${routerUrl}/mikrotik/login.html` };
+  return { publicUrl, host: new URL(publicUrl).hostname, pagesUrl: `${routerUrl}/mikrotik` };
 }
+
+// Hotspot pages WiLead replaces on the router. login.html sends the client to the portal;
+// rlogin.html answers any page opened before login (including the phones' captive portal
+// check) and redirects straight to the portal, skipping the router's own login page.
+const WILEAD_PAGES = ["login.html", "rlogin.html"];
 
 export type CheckItem = { label: string; ok: boolean; detail: string; optional?: boolean };
 
@@ -72,6 +77,7 @@ export async function routerChecklist(router: Router): Promise<CheckItem[]> {
     const [profile] = await print(api, "/ip/hotspot/profile", { name: WILEAD_PROFILE });
     const [userProfile] = await print(api, "/ip/hotspot/user/profile", { name: router.userProfile });
     const [loginFile] = await print(api, "/file", { name: `${HTML_DIR}/login.html` });
+    const [rloginFile] = await print(api, "/file", { name: `${HTML_DIR}/rlogin.html` });
     const [wg] = await print(api, "/ip/hotspot/walled-garden", { comment: COMMENT.portal });
     const [wgIp] = await print(api, "/ip/hotspot/walled-garden/ip", { comment: COMMENT.portal });
     const meta = await print(api, "/ip/firewall/address-list", { list: META_LIST });
@@ -97,6 +103,13 @@ export async function routerChecklist(router: Router): Promise<CheckItem[]> {
         label: "login.html do WiLead",
         ok: !!loginFile?.contents?.includes(host),
         detail: loginFile ? (loginFile.contents?.includes(host) ? `aponta para ${host}` : "é outro login.html") : "não instalado",
+      },
+      {
+        label: "rlogin.html do WiLead (portal abre direto)",
+        ok: !!rloginFile?.contents?.includes(host),
+        detail: rloginFile?.contents?.includes(host)
+          ? `o teste do celular vai direto para ${host}`
+          : "padrão do MikroTik: passa pela página de login do roteador antes do portal",
       },
       {
         label: "Walled garden do portal",
@@ -141,15 +154,17 @@ export async function routerChecklist(router: Router): Promise<CheckItem[]> {
 }
 
 // Default hotspot pages only exist after a hotspot server exists: reset-html writes them,
-// then the router downloads WiLead's login.html over the default one.
-async function installLoginHtml(api: RouterOSAPI) {
-  const { loginHtmlUrl } = wileadUrls();
+// then the router downloads WiLead's pages over the default ones.
+async function installHotspotPages(api: RouterOSAPI) {
+  const { pagesUrl } = wileadUrls();
   const servers = (await api.write("/ip/hotspot/print")) as Row[];
-  if (!servers.length) return "login.html será instalado quando o primeiro ponto for criado";
+  if (!servers.length) return "login.html e rlogin.html serão instalados quando o primeiro ponto for criado";
   const [alogin] = await print(api, "/file", { name: `${HTML_DIR}/alogin.html` });
   if (!alogin) await api.write("/ip/hotspot/reset-html", [`=numbers=${servers[0].name}`]);
-  await api.write("/tool/fetch", [`=url=${loginHtmlUrl}`, `=dst-path=${HTML_DIR}/login.html`, "=check-certificate=no"]);
-  return `login.html baixado de ${loginHtmlUrl}`;
+  for (const page of WILEAD_PAGES) {
+    await api.write("/tool/fetch", [`=url=${pagesUrl}/${page}`, `=dst-path=${HTML_DIR}/${page}`, "=check-certificate=no"]);
+  }
+  return `login.html e rlogin.html baixados de ${pagesUrl}`;
 }
 
 export async function prepareRouter(router: Router, opts: { nat: NatMode; enableDns: boolean }) {
@@ -211,7 +226,7 @@ export async function prepareRouter(router: Router, opts: { nat: NatMode; enable
       );
     }
 
-    log.push(await installLoginHtml(api));
+    log.push(await installHotspotPages(api));
     return log;
   });
 }
@@ -309,8 +324,8 @@ export async function createPoint(
       throw error;
     }
 
-    // The first hotspot of the router is what generates the default pages for login.html.
-    const loginHtml = await installLoginHtml(api).catch((error: Error) => `login.html não foi instalado: ${error.message}`);
+    // The first hotspot of the router is what generates the default pages WiLead replaces.
+    const loginHtml = await installHotspotPages(api).catch((error: Error) => `login.html e rlogin.html não foram instalados: ${error.message}`);
     return { hotspotServer: names.hotspot, interfaceName: names.vlan, loginHtml };
   });
 }

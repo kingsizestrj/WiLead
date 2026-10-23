@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { after } from "next/server";
 import { PortalShell } from "@/components/PortalShell";
 import type { Block, Theme } from "@/lib/blocks";
 import { db } from "@/lib/db";
@@ -31,7 +32,12 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   // already sent to this device is resumed instead of starting the sign-up again.
   const [pendingOtp] = await pendingOtps(mac);
 
-  await db.portalEvent.create({ data: { type: "VIEW", portalId: portal.id, locationId: location.id, mac } });
+  // Recorded after the response so the portal opens without waiting for it.
+  after(() =>
+    db.portalEvent
+      .create({ data: { type: "VIEW", portalId: portal.id, locationId: location.id, mac } })
+      .catch((error) => console.error("[portal] view", error)),
+  );
 
   return (
     <PortalShell theme={portal.theme as Theme} title={portal.welcomeTitle} place={location.city ? `${location.name} · ${location.city}` : undefined}>
