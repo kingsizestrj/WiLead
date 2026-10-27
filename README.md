@@ -37,7 +37,7 @@ Dashboard, clientes e acessos têm filtro por local e por período.
 No servidor (Ubuntu/Debian), com um usuário que tenha `sudo`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/kingsizestrj/hotspot/claude/laughing-dijkstra-xv9wc2/deploy/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/kingsizestrj/WiLead/claude/laughing-dijkstra-xv9wc2/deploy/install.sh -o install.sh
 bash install.sh
 ```
 

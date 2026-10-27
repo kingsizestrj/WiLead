@@ -3,7 +3,7 @@
 # Uso: bash install.sh   (rode de novo para atualizar)
 set -euo pipefail
 
-REPO="${REPO:-https://github.com/kingsizestrj/hotspot.git}"
+REPO="${REPO:-https://github.com/kingsizestrj/WiLead.git}"
 BRANCH="${BRANCH:-claude/laughing-dijkstra-xv9wc2}"
 DIR="${DIR:-$HOME/wilead}"
 
