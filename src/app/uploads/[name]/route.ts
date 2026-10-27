@@ -1,7 +1,5 @@
-import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { open, stat, type FileHandle } from "node:fs/promises";
 import path from "node:path";
-import { Readable } from "node:stream";
 import { UPLOAD_DIR } from "@/lib/uploads";
 
 const TYPES: Record<string, string> = {
@@ -18,8 +16,31 @@ function byteRange(header: string | null, size: number) {
   return { start, end };
 }
 
-const body = (file: string, start: number, end: number) =>
-  Readable.toWeb(createReadStream(file, { start, end })) as unknown as ReadableStream;
+const CHUNK_BYTES = 64 * 1024;
+
+// Reads the range one chunk at a time, only when the client asks for more. Readable.toWeb kept
+// writing after the phone cancelled a video request mid-transfer (it does that all the time) and
+// threw an uncaught "Controller is already closed".
+function body(file: string, start: number, end: number) {
+  let position = start;
+  let handle: FileHandle | undefined;
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      handle ??= await open(file, "r");
+      const length = Math.min(CHUNK_BYTES, end - position + 1);
+      const { bytesRead, buffer } = await handle.read(new Uint8Array(length), 0, length, position);
+      position += bytesRead;
+      if (bytesRead) controller.enqueue(buffer.subarray(0, bytesRead));
+      if (!bytesRead || position > end) {
+        controller.close();
+        await handle.close();
+      }
+    },
+    async cancel() {
+      await handle?.close();
+    },
+  });
+}
 
 // Panel uploads (logo, banners, sponsor video) served from our own domain, the one captive
 // portal clients reach before login. Videos are served in byte ranges: iOS only plays them that way.
