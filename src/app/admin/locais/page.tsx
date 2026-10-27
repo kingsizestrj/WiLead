@@ -15,7 +15,7 @@ export default async function LocationsPage() {
       include: {
         sources: { orderBy: { createdAt: "asc" } },
         accessPoints: { orderBy: { name: "asc" } },
-        _count: { select: { accesses: true, failures: { where: { createdAt: { gte: since } } } } },
+        _count: { select: { accesses: true, events: true, failures: { where: { createdAt: { gte: since } } } } },
       },
     }),
     db.router.findMany({ orderBy: { name: "asc" } }),
@@ -153,14 +153,19 @@ export default async function LocationsPage() {
                   </ConfirmButton>
                 </form>
               )}
-              <form action={deleteLocation.bind(null, l.id)} className="ms-auto">
-                <ConfirmButton
-                  message={`Excluir "${l.name}" do WiLead?${l._count.accesses ? ` ${accessesText(l._count.accesses)} deste local também ${l._count.accesses === 1 ? "será apagado" : "serão apagados"} (para manter o histórico, use "Juntar").` : ""} Nada é alterado no MikroTik.`}
-                  className={`${ghostButtonClass} !px-2 !py-1 text-xs text-rose-300`}
-                >
-                  Excluir local
-                </ConfirmButton>
-              </form>
+              {/* Deleting erases the location's accesses and portal views, so only empty ones can be deleted */}
+              {l._count.accesses || l._count.events ? (
+                <span className="ms-auto text-xs text-ink-400">Tem histórico: para tirar da lista, use Juntar.</span>
+              ) : (
+                <form action={deleteLocation.bind(null, l.id)} className="ms-auto">
+                  <ConfirmButton
+                    message={`Excluir "${l.name}" do WiLead? Nada é alterado no MikroTik.`}
+                    className={`${ghostButtonClass} !px-2 !py-1 text-xs text-rose-300`}
+                  >
+                    Excluir local
+                  </ConfirmButton>
+                </form>
+              )}
             </div>
           </Card>
         ))}

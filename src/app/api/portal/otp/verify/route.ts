@@ -40,9 +40,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Código incorreto." }, { status: 422 });
   }
 
-  // The device's other codes are closed too, so the portal stops resuming them.
-  await db.otpCode.updateMany({ where: { id: { in: pending.map((o) => o.id) } }, data: { consumedAt: new Date() } });
-
   const location = await resolveLocation(parsed.data.server, parsed.data.iface);
   const existing = await db.client.findUnique({ where: { phone: otp.phone } });
   const client = await db.client.upsert({
@@ -67,6 +64,9 @@ export async function POST(req: Request) {
       location,
       type: existing ? "RETURNING" : "NEW",
     });
+    // Closed only once the internet is released, so a router failure can be retried with the
+    // same code; the device's other codes are closed too, so the portal stops resuming them.
+    await db.otpCode.updateMany({ where: { id: { in: pending.map((o) => o.id) } }, data: { consumedAt: new Date() } });
     return NextResponse.json(access);
   } catch (error) {
     console.error(error);

@@ -93,10 +93,13 @@ export async function mergeLocation(id: string, form: FormData) {
   revalidatePath("/admin/locais");
 }
 
-// Removes the location from WiLead with its history (nothing changes on the MikroTik).
+// Removes a location without history from WiLead (nothing changes on the MikroTik). Deleting
+// cascades to accesses and portal views, so a location with history can only be merged.
 // If clients keep arriving from one of its sources, the location is registered again.
 export async function deleteLocation(id: string) {
   await requireAdmin();
+  const { _count } = await db.location.findUniqueOrThrow({ where: { id }, select: { _count: { select: { accesses: true, events: true } } } });
+  if (_count.accesses || _count.events) throw new Error("Este local tem histórico: use Juntar para não perder os acessos.");
   await db.location.delete({ where: { id } });
   revalidatePath("/admin/locais");
 }

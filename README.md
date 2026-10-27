@@ -44,6 +44,14 @@ bash install.sh
 O script instala o Docker e o git se faltarem, baixa o código em `~/wilead`, cria o `.env` com segredo e senha do admin gerados e sobe o banco e o app na porta 3000.
 Rode o mesmo comando de novo para atualizar.
 
+**Backup do banco:** `deploy/backup.sh` salva o banco em `~/backups/wilead-AAAAMMDD-HHMM.sql.gz` e apaga os com mais de 14 dias. Para rodar todo dia às 3h (horário de Brasília, servidor em UTC), adicione no `crontab -e`:
+
+```
+0 6 * * * /home/voltec/wilead/deploy/backup.sh >> /home/voltec/backups/backup.log 2>&1
+```
+
+Para restaurar: `gunzip -c ARQUIVO | docker compose exec -T db psql -U hotspot hotspot` (em um banco vazio).
+
 Depois:
 1. Preencha as variáveis do Chatwoot em `~/wilead/.env` e rode `docker compose up -d` dentro de `~/wilead`.
 2. No **Nginx Proxy Manager**, crie um Proxy Host:
