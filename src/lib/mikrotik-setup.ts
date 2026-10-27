@@ -7,16 +7,16 @@ import { OTP_ADDRESS_LIST, withRouter } from "./mikrotik";
 
 export const WILEAD_PROFILE = "wilead";
 export const HOTSPOT_NETWORKS_LIST = "redes-hotspot";
-const META_LIST = "wilead-meta";
 const HTML_DIR = "hotspot";
 const COMMENT = {
   portal: "WiLead: portal",
-  meta: "WiLead: Meta/WhatsApp",
-  otp: "WiLead: WhatsApp para ler o codigo",
   nat: "WiLead: saida dos pontos",
 };
 // Rule from the first setup.rsc that opened WhatsApp to everyone before login.
 const LEGACY_WHATSAPP_COMMENT = "WhatsApp (Meta)";
+// Earlier versions opened only WhatsApp (Meta networks + push services) to read the code.
+const LEGACY_META_LIST = "wilead-meta";
+const LEGACY_OTP_RULES = ["WiLead: WhatsApp para ler o codigo", "WiLead: notificacao Android do codigo", "WiLead: notificacao iPhone do codigo"];
 
 // Phones with the screen off stop answering the router's keepalive, and the RouterOS default
 // (2m) logged clients out minutes after they connected. Each user's limit-uptime sets how long
@@ -28,19 +28,14 @@ const UNIT_MINUTES: Record<string, number> = { w: 10080, d: 1440, h: 60, m: 1, s
 const minutes = (value: string | undefined) =>
   value === "none" ? Infinity : [...(value ?? "").matchAll(/(\d+)([wdhms])/g)].reduce((t, [, n, u]) => t + Number(n) * UNIT_MINUTES[u], 0);
 
-// Meta (AS32934) blocks used by WhatsApp; see https://bgp.he.net/AS32934
-const META_NETWORKS = [
-  "31.13.24.0/21", "31.13.64.0/18", "45.64.40.0/22", "57.144.0.0/14", "66.220.144.0/20",
-  "69.63.176.0/20", "69.171.224.0/19", "74.119.76.0/22", "102.132.96.0/20", "103.4.96.0/22",
-  "129.134.0.0/16", "157.240.0.0/16", "163.70.128.0/17", "173.252.64.0/18", "179.60.192.0/22",
-  "185.60.216.0/22", "185.89.216.0/22", "204.15.20.0/22",
-];
-
-// Push services that wake WhatsApp up so the code shows as a notification without opening
-// the app: Google FCM (any address, 5228-5230) and Apple APNs (17.0.0.0/8, 5223).
-const PUSH_RULES = [
-  { comment: "WiLead: notificacao Android do codigo", match: ["=protocol=tcp", "=dst-port=5228-5230"] },
-  { comment: "WiLead: notificacao iPhone do codigo", match: ["=protocol=tcp", "=dst-port=5223", "=dst-address=17.0.0.0/8"] },
+// For the minutes after asking for a code, devices in the wilead-otp list reach the whole internet,
+// so the code arrives like any WhatsApp message. Port 80 stays with the hotspot: the phones' captive
+// portal check is plain HTTP, and answering it would make the phone close the portal window as if
+// the login were done.
+const OTP_RULES = [
+  { comment: "WiLead: internet para ler o codigo (tcp ate 79)", match: ["=protocol=tcp", "=dst-port=1-79"] },
+  { comment: "WiLead: internet para ler o codigo (tcp a partir de 81)", match: ["=protocol=tcp", "=dst-port=81-65535"] },
+  { comment: "WiLead: internet para ler o codigo (udp)", match: ["=protocol=udp"] },
 ];
 
 type Row = Record<string, string>;
@@ -90,13 +85,10 @@ export async function routerChecklist(router: Router): Promise<CheckItem[]> {
     const [rloginFile] = await print(api, "/file", { name: `${HTML_DIR}/rlogin.html` });
     const [wg] = await print(api, "/ip/hotspot/walled-garden", { comment: COMMENT.portal });
     const [wgIp] = await print(api, "/ip/hotspot/walled-garden/ip", { comment: COMMENT.portal });
-    const meta = await print(api, "/ip/firewall/address-list", { list: META_LIST });
-    const [otp] = await print(api, "/ip/hotspot/walled-garden/ip", { comment: COMMENT.otp });
-    const push = await Promise.all(PUSH_RULES.map((rule) => print(api, "/ip/hotspot/walled-garden/ip", { comment: rule.comment })));
+    const otp = await Promise.all(OTP_RULES.map((rule) => print(api, "/ip/hotspot/walled-garden/ip", { comment: rule.comment })));
     const legacy = await print(api, "/ip/hotspot/walled-garden/ip", { comment: LEGACY_WHATSAPP_COMMENT });
     const [dns] = (await api.write("/ip/dns/print")) as Row[];
     const [nat] = await print(api, "/ip/firewall/nat", { comment: COMMENT.nat });
-    const metaAddresses = new Set(meta.map((m) => m.address));
 
     return [
       {
@@ -131,17 +123,11 @@ export async function routerChecklist(router: Router): Promise<CheckItem[]> {
         detail: wg ? `libera ${wg["dst-host"]}` : `falta liberar ${host}`,
       },
       {
-        label: "Lista de IPs da Meta (WhatsApp)",
-        ok: META_NETWORKS.every((n) => metaAddresses.has(n)),
-        detail: `${META_NETWORKS.filter((n) => metaAddresses.has(n)).length} de ${META_NETWORKS.length} blocos`,
-      },
-      { label: "WhatsApp temporário para ler o código", ok: !!otp, detail: otp ? "regra ativa" : "falta a regra" },
-      {
-        label: "Notificação do código (Google e Apple)",
-        ok: push.every((rows) => rows.length > 0),
-        detail: push.every((rows) => rows.length > 0)
-          ? "regras ativas"
-          : "falta a regra: sem dados móveis, o cliente só vê o código abrindo o WhatsApp",
+        label: "Internet temporária para ler o código",
+        ok: otp.every((rows) => rows.length > 0),
+        detail: otp.every((rows) => rows.length > 0)
+          ? "quem pede o código navega por alguns minutos (menos a porta 80, do teste de portal do celular)"
+          : "falta a regra: sem dados móveis, o cliente não recebe o código",
       },
       {
         label: "WhatsApp liberado para todos antes do login",
@@ -203,25 +189,22 @@ export async function prepareRouter(router: Router, opts: { nat: NatMode; enable
     await upsertByComment(api, "/ip/hotspot/walled-garden/ip", COMMENT.portal, [`=dst-host=${host}`, "=action=accept"]);
     log.push(`Walled garden liberando ${host}`);
 
-    const meta = new Set((await print(api, "/ip/firewall/address-list", { list: META_LIST })).map((m) => m.address));
-    for (const net of META_NETWORKS.filter((n) => !meta.has(n))) {
-      await api.write("/ip/firewall/address-list/add", [`=list=${META_LIST}`, `=address=${net}`, `=comment=${COMMENT.meta}`]);
-    }
-    await upsertByComment(api, "/ip/hotspot/walled-garden/ip", COMMENT.otp, [
-      "=action=accept",
-      `=src-address-list=${OTP_ADDRESS_LIST}`,
-      `=dst-address-list=${META_LIST}`,
-    ]);
-    log.push("WhatsApp liberado só para quem pediu o código (lista da Meta + regra temporária)");
-
-    for (const rule of PUSH_RULES) {
+    for (const rule of OTP_RULES) {
       await upsertByComment(api, "/ip/hotspot/walled-garden/ip", rule.comment, [
         "=action=accept",
         `=src-address-list=${OTP_ADDRESS_LIST}`,
         ...rule.match,
       ]);
     }
-    log.push("Notificação do código liberada só para quem pediu o código (Google e Apple)");
+    for (const comment of LEGACY_OTP_RULES) {
+      for (const rule of await print(api, "/ip/hotspot/walled-garden/ip", { comment })) {
+        await api.write("/ip/hotspot/walled-garden/ip/remove", [`=.id=${rule[".id"]}`]);
+      }
+    }
+    for (const entry of await print(api, "/ip/firewall/address-list", { list: LEGACY_META_LIST })) {
+      await api.write("/ip/firewall/address-list/remove", [`=.id=${entry[".id"]}`]);
+    }
+    log.push("Internet liberada por alguns minutos só para quem pediu o código");
 
     const legacy = await print(api, "/ip/hotspot/walled-garden/ip", { comment: LEGACY_WHATSAPP_COMMENT });
     for (const rule of legacy) await api.write("/ip/hotspot/walled-garden/ip/remove", [`=.id=${rule[".id"]}`]);

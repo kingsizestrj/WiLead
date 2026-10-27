@@ -69,10 +69,10 @@ export async function upsertHotspotUser(router: Router | null, opts: { mac: stri
 
 export const OTP_ADDRESS_LIST = "wilead-otp";
 
-// Lets a not-yet-logged-in device reach WhatsApp for a few minutes so it can read the code.
-// The walled garden accepts src-address-list=wilead-otp to dst-address-list=wilead-meta,
-// and RouterOS drops the entry by itself when the timeout ends.
-export async function allowWhatsappTemporarily(router: Router | null, ip: string, minutes: number) {
+// Lets a not-yet-logged-in device use the internet for a few minutes so it can read the code.
+// The walled garden accepts src-address-list=wilead-otp (all but port 80, see mikrotik-setup.ts),
+// and RouterOS drops the entry by itself when the timeout ends, blocking the device again.
+export async function allowInternetTemporarily(router: Router | null, ip: string, minutes: number) {
   if (process.env.HOTSPOT_DRY_RUN === "true") {
     console.log(`[mikrotik:dry-run] ${OTP_ADDRESS_LIST} += ${ip} por ${minutes}m`);
     return;
@@ -86,7 +86,7 @@ export async function allowWhatsappTemporarily(router: Router | null, ip: string
       `=list=${OTP_ADDRESS_LIST}`,
       `=address=${ip}`,
       `=timeout=${minutes}m`,
-      "=comment=WiLead: lendo o código no WhatsApp",
+      "=comment=WiLead: internet para ler o código",
     ]);
   });
 }

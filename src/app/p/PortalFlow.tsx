@@ -218,7 +218,7 @@ export function PortalFlow({ hotspot, portal, locationId, known, pending, router
             </p>
             {whatsappMinutes > 0 && (
               <p className="rounded-xl bg-snow/10 px-4 py-2 text-sm">
-                Sem internet no celular? O WhatsApp já está liberado neste Wi-Fi por {whatsappMinutes} minutos: abra, copie o código e volte aqui.
+                Sem internet no celular? Este Wi-Fi já está liberado para você por {whatsappMinutes} minutos: abra o WhatsApp, copie o código e volte aqui.
               </p>
             )}
             <input className={`${input} text-center font-mono text-3xl tracking-[0.5em]`} required inputMode="numeric"

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db, getSettings } from "@/lib/db";
 import { normalizeMac, normalizePhone } from "@/lib/phone";
 import { sendOtp } from "@/lib/whatsapp";
-import { allowWhatsappTemporarily } from "@/lib/mikrotik";
+import { allowInternetTemporarily } from "@/lib/mikrotik";
 import { resolveLocation } from "@/lib/portal";
 
 const schema = z.object({
@@ -53,8 +53,8 @@ export async function POST(req: Request) {
   // A router failure only affects clients without mobile data, so it must not block the code.
   if (settings.otpWhatsappMinutes > 0) {
     const location = await resolveLocation(parsed.data.server, parsed.data.iface);
-    await allowWhatsappTemporarily(location.router, parsed.data.ip, settings.otpWhatsappMinutes).catch((error) =>
-      console.error("[mikrotik] liberar WhatsApp", error),
+    await allowInternetTemporarily(location.router, parsed.data.ip, settings.otpWhatsappMinutes).catch((error) =>
+      console.error("[mikrotik] liberar internet temporária", error),
     );
   }
 

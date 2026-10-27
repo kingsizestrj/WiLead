@@ -37,7 +37,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               <input name="otpMaxPerHour" type="number" min={1} defaultValue={settings.otpMaxPerHour} className={inputClass} />
             </label>
             <label className="flex flex-col gap-1.5 text-xs font-semibold text-ink-300">
-              Minutos de WhatsApp liberado para quem pede o código (0 = desligado)
+              Minutos de internet liberada para quem pede o código (0 = desligado)
               <input name="otpWhatsappMinutes" type="number" min={0} max={15} defaultValue={settings.otpWhatsappMinutes} className={inputClass} />
               <span className="text-xs font-normal text-ink-400">Para quem está sem 4G conseguir ler o código. Precisa do roteador preparado em MikroTik → Gerenciar.</span>
             </label>

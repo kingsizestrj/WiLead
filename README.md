@@ -80,7 +80,7 @@ O painel configura o MikroTik pela API do RouterOS (serviço `api` 8728 ou `api-
 1. No roteador, rode `mikrotik/setup.rsc`, trocando o IP do WiLead e a senha. Ele libera a API só para o servidor do WiLead e cria o usuário `wilead-api`.
 2. No painel, em **MikroTik → Novo roteador**, cadastre IP, porta e o usuário `wilead-api`, e clique em **Testar conexão**.
 3. Clique em **Gerenciar hotspot e pontos**:
-   - **Preparar roteador** cria o perfil de hotspot `wilead` (login por http-pap e cookie) e instala o `login.html` e o `rlogin.html`: o roteador baixa de `PUBLIC_URL/mikrotik/` com `/tool fetch`. O `rlogin.html` responde ao teste que o celular faz ao entrar no Wi-Fi já com o endereço do portal, sem passar pela página de login do roteador, então o portal abre em um passo só. Também ajusta o perfil de usuário do hotspot para keepalive de 30 minutos: com o padrão do MikroTik (2 minutos), o cliente perdia a internet logo depois de bloquear a tela. O tempo de acesso continua sendo o configurado no WiLead. Também cria o walled garden do portal, a lista de IPs da Meta com a regra do WhatsApp temporário, e remove a regra antiga que liberava o WhatsApp para todos. Opcionalmente, liga o DNS para os clientes e cria o NAT das redes dos pontos: **src-nat para um IP público** (o painel sugere os IPs que o NAT do roteador já usa), masquerade, ou nada, se o NAT for feito em outro roteador. Em roteador de provedor, prefira o src-nat: o masquerade usa o IP do link de saída, que costuma ser privado. A lista de verificação mostra o que já está certo.
+   - **Preparar roteador** cria o perfil de hotspot `wilead` (login por http-pap e cookie) e instala o `login.html` e o `rlogin.html`: o roteador baixa de `PUBLIC_URL/mikrotik/` com `/tool fetch`. O `rlogin.html` responde ao teste que o celular faz ao entrar no Wi-Fi já com o endereço do portal, sem passar pela página de login do roteador, então o portal abre em um passo só. Também ajusta o perfil de usuário do hotspot para keepalive de 30 minutos: com o padrão do MikroTik (2 minutos), o cliente perdia a internet logo depois de bloquear a tela. O tempo de acesso continua sendo o configurado no WiLead. Também cria o walled garden do portal e a internet temporária para quem pediu o código, e remove a regra antiga que liberava o WhatsApp para todos. Opcionalmente, liga o DNS para os clientes e cria o NAT das redes dos pontos: **src-nat para um IP público** (o painel sugere os IPs que o NAT do roteador já usa), masquerade, ou nada, se o NAT for feito em outro roteador. Em roteador de provedor, prefira o src-nat: o masquerade usa o IP do link de saída, que costuma ser privado. A lista de verificação mostra o que já está certo.
    - **Novo ponto**: nome, cidade, porta tronco, VLAN e rede /24. O painel cria VLAN, IP, pool, servidor hotspot, DHCP e a rede na lista `redes-hotspot`, e o local já aparece no WiLead com o nome escolhido. O DHCP só é ligado depois do hotspot, e se algo falhar tudo o que foi criado é desfeito.
    - A tabela **Hotspots neste roteador** mostra, por servidor, aparelhos, conectados e IPs entregues pelo DHCP. Zero IPs com o Wi-Fi em uso indica que a VLAN do ponto não está chegando.
 4. Para remover um ponto do MikroTik, use **Locais → Remover ponto do MikroTik**. O histórico continua no WiLead.
@@ -89,12 +89,12 @@ O AP do ponto precisa entregar o Wi-Fi na VLAN do ponto: UniFi e Intelbras corpo
 
 Se o roteador não alcançar o `PUBLIC_URL` (NAT de retorno), defina `ROUTER_FETCH_URL` com o endereço interno do WiLead, por exemplo `http://10.128.31.78:3000`.
 
-### WhatsApp no walled garden (só para quem pediu o código)
+### Internet temporária para quem pediu o código
 
-O WhatsApp **não** fica liberado para todo mundo antes do login. Quando alguém pede o código, o WiLead coloca o IP do aparelho na lista `wilead-otp` do MikroTik por alguns minutos (padrão 3; ajuste ou desligue em **Configurações**).
-Só essa lista alcança os IPs da Meta (`wilead-meta`) antes do login, então o cliente sem 4G consegue ler o código. Quando o tempo acaba, o próprio MikroTik remove o IP da lista.
-A regra é criada pelo **Preparar roteador** no painel. Enquanto o IP está na lista, Instagram e Facebook também abrem, porque usam os mesmos IPs.
-A mesma lista também libera as notificações (Google FCM nas portas TCP 5228-5230 e Apple APNs em 17.0.0.0/8 na porta 5223), para o código aparecer na tela sem o cliente precisar abrir o WhatsApp.
+A internet **não** fica liberada antes do login. Quando alguém pede o código, o WiLead coloca o IP do aparelho na lista `wilead-otp` do MikroTik por alguns minutos (padrão 3; ajuste ou desligue em **Configurações**).
+Essa lista navega normalmente antes do login, então o cliente sem 4G recebe o código no WhatsApp como qualquer mensagem, com notificação. Quando o tempo acaba, o próprio MikroTik tira o IP da lista e, se o cliente não concluiu o login, tudo volta a ficar bloqueado.
+A única exceção é a porta 80: o teste que o Android e o iPhone fazem para detectar o portal é HTTP, e se ele passasse o celular fecharia a janela do portal como se o login tivesse terminado.
+As regras são criadas pelo **Preparar roteador** no painel, que também remove as regras de versões anteriores (só WhatsApp e notificações).
 
 ## Saúde dos pontos
 
